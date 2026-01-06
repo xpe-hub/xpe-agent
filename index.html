@@ -3,477 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XPE Agent - GitHub Release Manager</title>
+  <title>XPE Agent - AI Development Studio</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
+    :root {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d30;
+      --bg-hover: #3c3c3c;
+      --border-color: #3c3c3c;
+      --text-primary: #d4d4d4;
+      --text-secondary: #858585;
+      --text-muted: #6e6e6e;
+      --accent-blue: #0e639c;
+      --accent-purple: #764ba2;
+      --accent-green: #4ec9b0;
+      --accent-orange: #ce9178;
+      --warning: #cca700;
+      --error: #f14c4c;
+      --success: #89d185;
+    }
+    
     body {
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #0a0a0f;
-      color: #e0e0e0;
-      min-height: 100vh;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
       overflow: hidden;
     }
     
+    /* Main Layout */
     .app-container {
       display: flex;
+      flex-direction: column;
       height: 100vh;
     }
     
-    /* Sidebar */
-    .sidebar {
-      width: 260px;
-      background: linear-gradient(180deg, #12121a 0%, #1a1a2e 100%);
-      border-right: 1px solid rgba(255,255,255,0.05);
+    /* Header */
+    .header {
+      height: 50px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      padding: 0 16px;
+      justify-content: space-between;
     }
     
-    .sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
     
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 600;
     }
     
     .logo-icon {
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 16px;
     }
     
     .logo-text span {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     
-    .nav-menu {
-      flex: 1;
-      padding: 20px 10px;
-      overflow-y: auto;
-    }
-    
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-bottom: 4px;
-      color: #888;
-      font-size: 14px;
-    }
-    
-    .nav-item:hover {
-      background: rgba(255,255,255,0.05);
-      color: #fff;
-    }
-    
-    .nav-item.active {
-      background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
-      color: #fff;
-      border-left: 3px solid #667eea;
-    }
-    
-    .nav-item i { width: 20px; text-align: center; }
-    
-    .user-profile {
-      padding: 20px;
-      border-top: 1px solid rgba(255,255,255,0.05);
+    .header-right {
       display: flex;
       align-items: center;
       gap: 12px;
     }
     
-    .user-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .connection-status {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 16px;
-    }
-    
-    .user-info { flex: 1; overflow: hidden; }
-    
-    .user-name {
-      font-weight: 600;
-      font-size: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    .user-status {
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
       font-size: 12px;
-      color: #888;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
     
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #ff6b6b;
+      background: var(--error);
     }
     
-    .status-dot.connected { background: #00ff88; }
+    .status-dot.connected { background: var(--success); }
+    .status-dot.warning { background: var(--warning); }
     
-    /* Main Content */
+    /* Main Content - Three Panes */
     .main-content {
       flex: 1;
       display: flex;
-      flex-direction: column;
       overflow: hidden;
     }
     
-    .top-bar {
-      height: 60px;
-      background: rgba(18,18,26,0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+    /* Left Pane - Chat (25%) */
+    .chat-pane {
+      width: 28%;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
+      flex-direction: column;
     }
     
-    .page-title {
-      font-size: 18px;
+    .chat-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
       font-weight: 600;
-    }
-    
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .icon-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.05);
-      border: none;
-      color: #888;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .icon-btn:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    
-    .content-area {
-      flex: 1;
-      padding: 24px;
-      overflow-y: auto;
-    }
-    
-    /* Sections */
-    .section { display: none; }
-    .section.active { display: block; }
-    
-    /* Dashboard Stats */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    
-    .stat-card {
-      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 24px;
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    
-    .stat-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 40px rgba(102,126,234,0.2);
-    }
-    
-    .stat-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      margin-bottom: 16px;
-    }
-    
-    .stat-icon.blue { background: rgba(102,126,234,0.2); color: #667eea; }
-    .stat-icon.green { background: rgba(0,255,136,0.2); color: #00ff88; }
-    .stat-icon.purple { background: rgba(118,75,162,0.2); color: #764ba2; }
-    .stat-icon.orange { background: rgba(255,165,0,0.2); color: #ffa500; }
-    
-    .stat-value {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    
-    .stat-label {
-      color: #888;
       font-size: 14px;
-    }
-    
-    /* Cards */
-    .card {
-      background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-    
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 10px;
     }
     
-    /* Form Elements */
-    .form-group { margin-bottom: 20px; }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 13px;
-      color: #888;
-      font-weight: 500;
-    }
-    
-    .form-control {
-      width: 100%;
-      padding: 14px 16px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      color: #fff;
-      font-size: 14px;
-      transition: all 0.3s;
-    }
-    
-    .form-control:focus {
-      outline: none;
-      border-color: #667eea;
-      background: rgba(255,255,255,0.08);
-    }
-    
-    .form-control::placeholder { color: #555; }
-    
-    textarea.form-control {
-      resize: vertical;
-      min-height: 120px;
-    }
-    
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    
-    /* Buttons */
-    .btn {
-      padding: 14px 24px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(102,126,234,0.4);
-    }
-    
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-    
-    .btn-secondary {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.1);
-    }
-    
-    .btn-danger {
-      background: rgba(255,107,107,0.2);
-      border: 1px solid rgba(255,107,107,0.3);
-      color: #ff6b6b;
-    }
-    
-    .btn-danger:hover {
-      background: rgba(255,107,107,0.3);
-    }
-    
-    .btn-sm {
-      padding: 8px 16px;
-      font-size: 13px;
-    }
-    
-    /* File Input */
-    .file-input-wrapper {
-      position: relative;
-    }
-    
-    .file-input-wrapper input[type="text"] {
-      padding-right: 50px;
-    }
-    
-    .file-btn {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      padding: 8px 14px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 14px;
-      transition: opacity 0.3s;
-    }
-    
-    .file-btn:hover { opacity: 0.9; }
-    
-    /* Releases List */
-    .releases-grid {
-      display: grid;
-      gap: 16px;
-    }
-    
-    .release-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 20px;
-      transition: all 0.3s;
-    }
-    
-    .release-card:hover {
-      background: rgba(255,255,255,0.05);
-      border-color: rgba(102,126,234,0.3);
-    }
-    
-    .release-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    
-    .release-info h3 {
-      font-size: 16px;
-      margin-bottom: 4px;
-    }
-    
-    .release-tag {
-      font-size: 12px;
-      color: #667eea;
-      background: rgba(102,126,234,0.2);
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
-    
-    .release-meta {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 12px;
-    }
-    
-    .release-assets {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    
-    .asset-badge {
-      padding: 6px 12px;
-      background: rgba(0,255,136,0.1);
-      border: 1px solid rgba(0,255,136,0.2);
-      border-radius: 6px;
-      font-size: 12px;
-      color: #00ff88;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .release-actions {
-      display: flex;
-      gap: 8px;
-    }
-    
-    /* Chat */
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - 140px);
-      background: rgba(255,255,255,0.02);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    
     .chat-messages {
       flex: 1;
-      padding: 20px;
+      padding: 16px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -481,431 +146,959 @@
     }
     
     .message {
-      max-width: 70%;
-      padding: 14px 18px;
-      border-radius: 16px;
-      font-size: 14px;
-      line-height: 1.5;
+      max-width: 90%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
     }
     
     .message.user {
       align-self: flex-end;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
       border-bottom-right-radius: 4px;
     }
     
     .message.assistant {
       align-self: flex-start;
-      background: rgba(255,255,255,0.08);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
       border-bottom-left-radius: 4px;
     }
     
     .message-header {
       font-size: 11px;
       opacity: 0.7;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .message-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .message-action-btn {
+      padding: 4px 10px;
+      background: var(--bg-hover);
+      border: none;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .message-action-btn:hover {
+      background: var(--accent-blue);
+      color: white;
     }
     
     .chat-input-area {
-      padding: 20px;
-      background: rgba(255,255,255,0.03);
-      border-top: 1px solid rgba(255,255,255,0.05);
-      display: flex;
-      gap: 12px;
-    }
-    
-    .chat-input-area input {
-      flex: 1;
-      padding: 14px 18px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      color: #fff;
-      font-size: 14px;
-    }
-    
-    .chat-input-area input:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-    
-    /* Terminal */
-    .terminal {
-      background: #0d0d12;
-      border-radius: 12px;
       padding: 16px;
-      font-family: 'Consolas', 'Monaco', monospace;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .chat-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
       font-size: 13px;
-      max-height: 200px;
-      overflow-y: auto;
+      resize: none;
+      min-height: 44px;
+      max-height: 120px;
+      font-family: inherit;
     }
     
-    .terminal-line {
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
     }
     
-    .terminal-line:last-child { border-bottom: none; }
-    
-    .terminal-line.success { color: #00ff88; }
-    .terminal-line.error { color: #ff6b6b; }
-    .terminal-line.info { color: #667eea; }
-    .terminal-line.warning { color: #ffa500; }
-    
-    /* Settings */
-    .settings-section {
-      max-width: 600px;
+    .chat-send-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
     }
     
-    .setting-item {
+    .chat-send-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .chat-send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Center Pane - Code Editor (44%) */
+    .editor-pane {
+      width: 44%;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+    }
+    
+    .editor-tabs {
+      height: 40px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      overflow-x: auto;
+    }
+    
+    .editor-tab {
+      padding: 8px 16px;
+      background: var(--bg-tertiary);
+      border: none;
+      border-radius: 6px 6px 0 0;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    
+    .editor-tab.active {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-top: 2px solid var(--accent-blue);
+    }
+    
+    .editor-tab .close-tab {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .editor-tab:hover .close-tab {
+      opacity: 1;
+    }
+    
+    .editor-tab .close-tab:hover {
+      background: var(--error);
+    }
+    
+    .add-tab {
+      padding: 8px 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      opacity: 0;
+    }
+    
+    .editor-tabs:hover .add-tab {
+      opacity: 1;
+    }
+    
+    .code-editor {
+      flex: 1;
+      padding: 16px;
+      font-family: 'Consolas', 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: none;
+      resize: none;
+      outline: none;
+      white-space: pre;
+      overflow: auto;
+    }
+    
+    .code-editor::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .editor-toolbar {
+      height: 36px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+    }
+    
+    .toolbar-btn {
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    
+    .toolbar-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    
+    .toolbar-btn.primary {
+      background: var(--accent-blue);
+      color: white;
+    }
+    
+    .toolbar-btn.primary:hover {
+      background: #1177bb;
+    }
+    
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-color);
+      margin: 0 4px;
+    }
+    
+    /* Right Pane - Project & Status (28%) */
+    .status-pane {
+      width: 28%;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .status-section {
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .status-header {
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 13px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: background 0.2s;
     }
     
-    .setting-info h4 {
-      font-size: 14px;
-      margin-bottom: 4px;
+    .status-header:hover {
+      background: var(--bg-hover);
     }
     
-    .setting-info p {
+    .status-header i {
+      transition: transform 0.2s;
+    }
+    
+    .status-header.collapsed i {
+      transform: rotate(-90deg);
+    }
+    
+    .status-content {
+      padding: 0 16px 16px;
+    }
+    
+    .status-content.collapsed {
+      display: none;
+    }
+    
+    .form-group {
+      margin-bottom: 12px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      transition: border-color 0.2s;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+    
+    .form-control::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .btn {
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(14, 99, 156, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+    }
+    
+    .btn-success {
+      background: var(--success);
+      color: #1e1e1e;
+    }
+    
+    .btn-danger {
+      background: rgba(241, 76, 76, 0.2);
+      border: 1px solid var(--error);
+      color: var(--error);
+    }
+    
+    .btn-sm {
+      padding: 6px 12px;
       font-size: 12px;
-      color: #666;
     }
+    
+    .btn-block {
+      width: 100%;
+    }
+    
+    /* Build Status */
+    .build-status {
+      padding: 16px;
+    }
+    
+    .build-progress {
+      margin-bottom: 16px;
+    }
+    
+    .progress-bar {
+      height: 6px;
+      background: var(--bg-tertiary);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    
+    .progress-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .build-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .build-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    
+    .build-step-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+    
+    .build-step-icon.pending {
+      background: var(--bg-hover);
+      color: var(--text-muted);
+    }
+    
+    .build-step-icon.running {
+      background: var(--warning);
+      color: #1e1e1e;
+      animation: pulse 1s infinite;
+    }
+    
+    .build-step-icon.success {
+      background: var(--success);
+      color: #1e1e1e;
+    }
+    
+    .build-step-icon.error {
+      background: var(--error);
+      color: white;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    /* Build Logs */
+    .build-logs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      background: #0d0d0d;
+      border-radius: 6px;
+      margin-top: 12px;
+    }
+    
+    .log-line {
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    
+    .log-line.info { color: var(--text-secondary); }
+    .log-line.success { color: var(--success); }
+    .log-line.error { color: var(--error); }
+    .log-line.warning { color: var(--warning); }
+    
+    /* Artifacts */
+    .artifact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .artifact-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .artifact-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .artifact-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    
+    .artifact-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .artifact-size {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    
+    /* Action Buttons */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    
+    /* Settings Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      width: 500px;
+      max-width: 90%;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    
+    .modal-close:hover {
+      background: var(--bg-hover);
+    }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    
+    /* Code Blocks */
+    .code-block {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    
+    .code-block-header {
+      padding: 8px 12px;
+      background: var(--bg-hover);
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .code-block-content {
+      padding: 12px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    
+    /* Empty States */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+      font-size: 40px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+    
+    .empty-state h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+    
+    .empty-state p {
+      font-size: 13px;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     
     /* Spinner */
     .spinner {
       display: inline-block;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
+      border-top-color: white;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #666;
+    /* Resizable Panes */
+    .resizer {
+      width: 4px;
+      cursor: col-resize;
+      background: transparent;
+      transition: background 0.2s;
     }
     
-    .empty-state i {
-      font-size: 48px;
-      margin-bottom: 20px;
-      opacity: 0.5;
+    .resizer:hover {
+      background: var(--accent-blue);
     }
-    
-    .empty-state h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
-      color: #888;
-    }
-    
-    .empty-state p {
-      font-size: 14px;
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-      .sidebar { width: 70px; }
-      .sidebar-header .logo-text,
-      .nav-item span,
-      .user-info { display: none; }
-      .sidebar { align-items: center; }
-      .nav-item { justify-content: center; }
-      .user-profile { justify-content: center; }
-      .row { grid-template-columns: 1fr; }
-    }
-    
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
   </style>
 </head>
 <body>
   <div class="app-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
         <div class="logo">
           <div class="logo-icon">🤖</div>
           <div class="logo-text">XPE <span>Agent</span></div>
         </div>
       </div>
-      
-      <nav class="nav-menu">
-        <div class="nav-item active" data-section="dashboard">
-          <i class="fas fa-th-large"></i>
-          <span>Dashboard</span>
+      <div class="header-right">
+        <div class="connection-status">
+          <div class="status-dot" id="connectionDot"></div>
+          <span id="connectionText">Desconectado</span>
         </div>
-        <div class="nav-item" data-section="chat">
-          <i class="fas fa-comments"></i>
-          <span>Chat AI</span>
-        </div>
-        <div class="nav-item" data-section="releases">
-          <i class="fas fa-box-open"></i>
-          <span>Releases</span>
-        </div>
-        <div class="nav-item" data-section="create">
-          <i class="fas fa-plus-circle"></i>
-          <span>Crear Release</span>
-        </div>
-        <div class="nav-item" data-section="settings">
+        <button class="toolbar-btn" onclick="openSettings()" title="Configuración">
           <i class="fas fa-cog"></i>
-          <span>Configuración</span>
-        </div>
-      </nav>
-      
-      <div class="user-profile">
-        <div class="user-avatar" id="userAvatarInitial">?</div>
-        <div class="user-info">
-          <div class="user-name" id="userName">Iniciar Sesión</div>
-          <div class="user-status">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">Desconectado</span>
-          </div>
-        </div>
+        </button>
       </div>
-    </aside>
+    </header>
     
     <!-- Main Content -->
-    <main class="main-content">
-      <div class="top-bar">
-        <div class="page-title" id="pageTitle">Dashboard</div>
-        <div class="top-actions">
-          <button class="icon-btn" onclick="refreshData()" title="Actualizar">
-            <i class="fas fa-sync-alt"></i>
+    <div class="main-content">
+      <!-- Left Pane - Chat -->
+      <aside class="chat-pane">
+        <div class="chat-header">
+          <i class="fas fa-comments"></i>
+          Chat AI
+          <span style="margin-left: auto; font-size: 11px; color: var(--accent-green);">
+            <i class="fas fa-circle" style="font-size: 6px;"></i> Groq Powered
+          </span>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+          <div class="message assistant">
+            <div class="message-header">
+              <i class="fas fa-robot"></i> XPE Agent
+            </div>
+            ¡Hola! Soy XPE Agent, tu asistente de desarrollo con IA. Puedo:
+            <br><br>
+            • <strong>Crear DLLs y EXEs</strong> que tú necesites
+            • <strong>Generar código</strong> en C++, C#, Python y más
+            • <strong>Compilar</strong> usando GitHub Actions
+            • <strong>Gestionar repositorios</strong> en GitHub
+            <br><br>
+            Ejemplos de pedidos:
+            <br>• "Crea una DLL para加密 archivos"
+            <br>• "Haz un exe que muestre alertas"
+            <br>• "Genera una librería para manipulación de imágenes"
+            <br><br>
+            ¿Qué necesitas hoy?
+          </div>
+        </div>
+        
+        <div class="chat-input-area">
+          <div class="chat-input-wrapper">
+            <textarea class="chat-input" id="chatInput" placeholder="Describe lo que necesitas... Ej: 'Crea una DLL para...'"></textarea>
+            <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+      
+      <!-- Resizer -->
+      <div class="resizer" id="resizer1"></div>
+      
+      <!-- Center Pane - Code Editor -->
+      <main class="editor-pane">
+        <div class="editor-tabs" id="editorTabs">
+          <div class="editor-tab active" data-file="main">
+            <i class="fas fa-file-code"></i>
+            <span>main.cpp</span>
+            <span class="close-tab" onclick="closeTab(this)">×</span>
+          </div>
+          <div class="add-tab" onclick="addNewTab()">
+            <i class="fas fa-plus"></i>
+          </div>
+        </div>
+        
+        <textarea class="code-editor" id="codeEditor" placeholder="// Tu código aparecerá aquí...
+// Cuando la IA genere código, podrás verlo y editarlo aquí.
+
+// Ejemplo de estructura:
+#include &lt;windows.h&gt;
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+    switch (ul_reason_for_call) {
+        case DLL_PROCESS_ATTACH:
+        case DLL_THREAD_ATTACH:
+        case DLL_THREAD_DETACH:
+        case DLL_PROCESS_DETACH:
+            break;
+    }
+    return TRUE;
+}"></textarea>
+        
+        <div class="editor-toolbar">
+          <button class="toolbar-btn primary" onclick="compileProject('dll')">
+            <i class="fas fa-cogs"></i> Compilar DLL
           </button>
-          <button class="icon-btn" onclick="openSettings()" title="Configuración">
-            <i class="fas fa-cog"></i>
+          <button class="toolbar-btn primary" onclick="compileProject('exe')">
+            <i class="fas fa-play"></i> Compilar EXE
+          </button>
+          <div class="toolbar-divider"></div>
+          <button class="toolbar-btn" onclick="saveCode()">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+          <button class="toolbar-btn" onclick="copyCode()">
+            <i class="fas fa-copy"></i> Copiar
           </button>
         </div>
-      </div>
+      </main>
       
-      <div class="content-area">
-        <!-- Dashboard Section -->
-        <section id="dashboard" class="section active">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon blue"><i class="fas fa-rocket"></i></div>
-              <div class="stat-value" id="totalReleases">0</div>
-              <div class="stat-label">Releases Creadas</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
-              <div class="stat-value" id="successRate">0%</div>
-              <div class="stat-label">Tasa de Éxito</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon purple"><i class="fas fa-file-code"></i></div>
-              <div class="stat-value" id="totalAssets">0</div>
-              <div class="stat-label">Archivos Subidos</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon orange"><i class="fas fa-download"></i></div>
-              <div class="stat-value" id="totalDownloads">0</div>
-              <div class="stat-label">Descargas</div>
-            </div>
+      <!-- Resizer -->
+      <div class="resizer" id="resizer2"></div>
+      
+      <!-- Right Pane - Project & Status -->
+      <aside class="status-pane">
+        <!-- Project Settings -->
+        <div class="status-section">
+          <div class="status-header" onclick="toggleSection(this)">
+            <span><i class="fas fa-folder"></i> Proyecto</span>
+            <i class="fas fa-chevron-down"></i>
           </div>
-          
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-history"></i> Actividad Reciente</div>
+          <div class="status-content">
+            <div class="form-group">
+              <label>Propietario</label>
+              <input type="text" id="owner" class="form-control" placeholder="xpe-hub">
             </div>
-            <div class="terminal" id="activityLog">
-              <div class="terminal-line info">XPE Agent iniciado</div>
-              <div class="terminal-line info">Inicia sesión con tu token de GitHub</div>
+            <div class="form-group">
+              <label>Repositorio</label>
+              <input type="text" id="repo" class="form-control" placeholder="mi-proyecto">
             </div>
+            <div class="form-group">
+              <label>Tipo de Build</label>
+              <select id="buildType" class="form-control">
+                <option value="cpp-dll">C++ DLL</option>
+                <option value="cpp-exe">C++ EXE</option>
+                <option value="csharp-exe">C# EXE</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="createOrUpdateProject()">
+              <i class="fas fa-sync"></i> Crear/Actualizar Proyecto
+            </button>
           </div>
-        </section>
+        </div>
         
-        <!-- Chat Section -->
-        <section id="chat" class="section">
-          <div class="chat-container">
-            <div class="chat-messages" id="chatMessages">
-              <div class="message assistant">
-                <div class="message-header">XPE Agent</div>
-                ¡Hola! Soy XPE Agent. Estoy listo para ayudarte a crear releases, gestionar DLLs/EXEs y automatizar tus proyectos en GitHub. ¿Qué necesitas?
+        <!-- Build Status -->
+        <div class="status-section">
+          <div class="status-header" onclick="toggleSection(this)">
+            <span><i class="fas fa-rocket"></i> Estado de Build</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="status-content build-status">
+            <div class="build-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+              </div>
+              <div class="progress-text">
+                <span id="progressStatus">Sin actividad</span>
+                <span id="progressPercent">0%</span>
               </div>
             </div>
-            <div class="chat-input-area">
-              <input type="text" id="chatInput" placeholder="Escribe tu mensaje... (Ej: Crea un release v1.0.0 para mi proyecto)">
-              <button class="btn btn-primary" onclick="sendChatMessage()">
-                <i class="fas fa-paper-plane"></i>
-              </button>
+            
+            <div class="build-steps" id="buildSteps">
+              <div class="build-step">
+                <div class="build-step-icon pending" id="step1Icon">
+                  <i class="fas fa-clock"></i>
+                </div>
+                <span id="step1Text">Esperando...</span>
+              </div>
+              <div class="build-step">
+                <div class="build-step-icon pending" id="step2Icon">
+                  <i class="fas fa-clock"></i>
+                </div>
+                <span id="step2Text">Esperando...</span>
+              </div>
+              <div class="build-step">
+                <div class="build-step-icon pending" id="step3Icon">
+                  <i class="fas fa-clock"></i>
+                </div>
+                <span id="step3Text">Esperando...</span>
+              </div>
+              <div class="build-step">
+                <div class="build-step-icon pending" id="step4Icon">
+                  <i class="fas fa-clock"></i>
+                </div>
+                <span id="step4Text">Esperando...</span>
+              </div>
             </div>
-          </div>
-        </section>
-        
-        <!-- Releases List Section -->
-        <section id="releases" class="section">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-list"></i> Releases del Repositorio</div>
-              <button class="btn btn-primary btn-sm" onclick="listReleases()">
+            
+            <div class="build-logs" id="buildLogs">
+              <div class="log-line info">Logs del build aparecerán aquí...</div>
+            </div>
+            
+            <div class="action-grid">
+              <button class="btn btn-secondary btn-sm" onclick="refreshBuildStatus()" id="refreshBtn">
                 <i class="fas fa-sync-alt"></i> Actualizar
               </button>
-            </div>
-            
-            <div class="row" style="margin-bottom: 20px;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label>Propietario</label>
-                <input type="text" id="listOwner" class="form-control" placeholder="xpe-hub" value="xpe-hub">
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label>Repositorio</label>
-                <input type="text" id="listRepo" class="form-control" placeholder="mi-proyecto">
-              </div>
-            </div>
-          </div>
-          
-          <div id="releasesList">
-            <div class="empty-state">
-              <i class="fas fa-box-open"></i>
-              <h3>No hay releases</h3>
-              <p>Ingresa un repositorio para ver sus releases</p>
-            </div>
-          </div>
-        </section>
-        
-        <!-- Create Release Section -->
-        <section id="create" class="section">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-plus-circle"></i> Crear Nueva Release</div>
-            </div>
-            
-            <div class="row">
-              <div class="form-group">
-                <label>Propietario / Organización</label>
-                <input type="text" id="owner" class="form-control" placeholder="xpe-hub">
-              </div>
-              <div class="form-group">
-                <label>Repositorio</label>
-                <input type="text" id="repo" class="form-control" placeholder="mi-proyecto">
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="form-group">
-                <label>Tag de la Release</label>
-                <input type="text" id="tag" class="form-control" placeholder="v1.0.0">
-              </div>
-              <div class="form-group">
-                <label>Nombre de la Release</label>
-                <input type="text" id="name" class="form-control" placeholder="Versión 1.0.0">
-              </div>
-            </div>
-            
-            <div class="form-group">
-              <label>Archivo (DLL, EXE, ZIP, etc.)</label>
-              <div class="file-input-wrapper">
-                <input type="text" id="filePath" class="form-control" readonly placeholder="Seleccionar archivo...">
-                <button class="file-btn" onclick="selectFile()">
-                  <i class="fas fa-folder-open"></i>
-                </button>
-              </div>
-            </div>
-            
-            <div class="form-group">
-              <label>Descripción / Notas de la Release</label>
-              <textarea id="body" class="form-control" placeholder="Describe los cambios de esta versión..."></textarea>
-            </div>
-            
-            <button class="btn btn-primary" style="width: 100%;" onclick="createRelease()" id="createReleaseBtn">
-              <i class="fas fa-rocket"></i> Crear Release
-            </button>
-            
-            <div id="releaseResult" style="margin-top: 16px;"></div>
-          </div>
-        </section>
-        
-        <!-- Settings Section -->
-        <section id="settings" class="section">
-          <div class="settings-section">
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title"><i class="fas fa-key"></i> Configuración de GitHub</div>
-              </div>
-              
-              <div class="form-group">
-                <label>GitHub Token</label>
-                <input type="password" id="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
-                <p style="font-size: 12px; color: #666; margin-top: 8px;">
-                  <i class="fas fa-info-circle"></i>
-                  Crea un token en GitHub Settings → Developer settings → Personal access tokens
-                </p>
-              </div>
-              
-              <button class="btn btn-primary" onclick="saveConfig()">
-                <i class="fas fa-save"></i> Guardar Token
+              <button class="btn btn-success btn-sm" onclick="downloadAndRelease()" id="downloadBtn" disabled>
+                <i class="fas fa-download"></i> Descargar
               </button>
             </div>
-            
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title"><i class="fas fa-info-circle"></i> Acerca de XPE Agent</div>
+          </div>
+        </div>
+        
+        <!-- Artifacts -->
+        <div class="status-section" style="flex: 1;">
+          <div class="status-header" onclick="toggleSection(this)">
+            <span><i class="fas fa-box"></i> Artefactos</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="status-content" id="artifactsContent">
+            <div class="artifact-list" id="artifactList">
+              <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <h3>Sin artefactos</h3>
+                <p>Los archivos compilados aparecerán aquí</p>
               </div>
-              <p style="color: #888; line-height: 1.8;">
-                <strong>XPE Agent</strong> es una aplicación de escritorio diseñada para automatizar 
-                la gestión de releases en GitHub. Permite crear releases con archivos DLL, EXE, ZIP 
-                y otros formatos de manera sencilla.
-              </p>
-              <p style="color: #666; font-size: 12px; margin-top: 12px;">
-                Versión 1.0.0 • Desarrollado por MiniMax Agent
-              </p>
             </div>
           </div>
-        </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+  
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Configuración</div>
+        <button class="modal-close" onclick="closeSettings()">×</button>
       </div>
-    </main>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>GitHub Token</label>
+          <input type="password" id="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
+          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
+            Token con permisos de repo y workflow
+          </p>
+        </div>
+        <div class="form-group">
+          <label>Groq API Key</label>
+          <input type="password" id="groqApiKey" class="form-control" placeholder="gsk_xxxxxxxxxxxx">
+          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
+            Para capacidades de IA (groq.com)
+          </p>
+        </div>
+        <div class="form-group">
+          <label>Directorio de Trabajo</label>
+          <input type="text" id="workDir" class="form-control" placeholder="/home/usuario/Descargas">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeSettings()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveSettings()">
+          <i class="fas fa-save"></i> Guardar
+        </button>
+      </div>
+    </div>
   </div>
   
   <script>
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const section = item.dataset.section;
-        
-        // Update active nav item
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        
-        // Update active section
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(section).classList.add('active');
-        
-        // Update page title
-        const titles = {
-          dashboard: 'Dashboard',
-          chat: 'Chat AI',
-          releases: 'Releases',
-          create: 'Crear Release',
-          settings: 'Configuración'
-        };
-        document.getElementById('pageTitle').textContent = titles[section] || 'XPE Agent';
-      });
-    });
-    
-    // Terminal logging
-    const activityLog = document.getElementById('activityLog');
-    
-    function log(message, type = 'info') {
-      const line = document.createElement('div');
-      line.className = 'terminal-line ' + type;
-      const time = new Date().toLocaleTimeString();
-      line.textContent = `[${time}] ${message}`;
-      activityLog.appendChild(line);
-      activityLog.scrollTop = activityLog.scrollHeight;
-    }
+    // State
+    let currentFiles = { 'main.cpp': '' };
+    let activeFile = 'main.cpp';
+    let isBuilding = false;
+    let buildStatus = null;
+    let currentRunId = null;
     
     // Initialize
     async function init() {
@@ -914,260 +1107,666 @@
       const config = await window.api.getConfig();
       if (config.githubToken) {
         document.getElementById('githubToken').value = config.githubToken;
-        await checkConnection(config.githubToken);
-      } else {
-        log('No se encontró token guardado. Por favor, configura tu GitHub Token.', 'warning');
+        await checkGitHubConnection(config.githubToken);
+      }
+      if (config.groqApiKey) {
+        document.getElementById('groqApiKey').value = config.groqApiKey;
+      }
+      if (config.defaultOwner) {
+        document.getElementById('owner').value = config.defaultOwner;
+      }
+      if (config.workDir) {
+        document.getElementById('workDir').value = config.workDir;
+      }
+      
+      // Check for saved project
+      if (config.lastRepo) {
+        document.getElementById('owner').value = config.lastRepo.owner;
+        document.getElementById('repo').value = config.lastRepo.name;
       }
     }
     
-    // Check GitHub connection
-    async function checkConnection(token) {
+    // GitHub Connection
+    async function checkGitHubConnection(token) {
       const result = await window.api.getUserInfo();
       if (result.success) {
-        document.getElementById('userName').textContent = result.name || result.login;
-        document.getElementById('statusDot').classList.add('connected');
-        document.getElementById('statusText').textContent = 'Conectado';
-        document.getElementById('userAvatarInitial').textContent = (result.name || result.login).charAt(0).toUpperCase();
-        log(`Conectado como: ${result.name || result.login}`, 'success');
+        updateConnectionStatus(true, result.name || result.login);
+        log(`Conectado a GitHub: ${result.name || result.login}`, 'success');
+        return true;
       } else {
-        document.getElementById('statusDot').classList.remove('connected');
-        document.getElementById('statusText').textContent = 'Desconectado';
-        if (result.code === 'NO_TOKEN') {
-          log('Token no configurado', 'warning');
-        } else {
-          log(`Error de conexión: ${result.error}`, 'error');
+        updateConnectionStatus(false);
+        if (result.code !== 'NO_TOKEN') {
+          log(`Error de GitHub: ${result.error}`, 'error');
         }
-      }
-      return result;
-    }
-    
-    // Save configuration
-    async function saveConfig() {
-      const token = document.getElementById('githubToken').value.trim();
-      if (!token) {
-        log('Error: Ingresa un token de GitHub', 'error');
-        return;
-      }
-      
-      await window.api.setToken(token);
-      await checkConnection(token);
-      log('Token guardado correctamente', 'success');
-    }
-    
-    // Open settings section
-    function openSettings() {
-      document.querySelector('.nav-item[data-section="settings"]').click();
-    }
-    
-    // Refresh data
-    async function refreshData() {
-      log('Actualizando datos...', 'info');
-      const config = await window.api.getConfig();
-      if (config.githubToken) {
-        await checkConnection(config.githubToken);
-      }
-      log('Datos actualizados', 'success');
-    }
-    
-    // File selection
-    async function selectFile() {
-      const result = await window.api.selectFile();
-      if (result.success) {
-        document.getElementById('filePath').value = result.path;
-        log(`Archivo seleccionado: ${result.path}`, 'success');
+        return false;
       }
     }
     
-    // Create release
-    async function createRelease() {
-      const owner = document.getElementById('owner').value.trim();
-      const repo = document.getElementById('repo').value.trim();
-      const tag = document.getElementById('tag').value.trim();
-      const name = document.getElementById('name').value.trim();
-      const filePath = document.getElementById('filePath').value.trim();
-      const body = document.getElementById('body').value.trim();
-      
-      if (!owner || !repo || !tag) {
-        log('Error: Propietario, repositorio y tag son requeridos', 'error');
-        return;
-      }
-      
-      log(`Creando release ${tag} en ${owner}/${repo}...`, 'info');
-      
-      const btn = document.getElementById('createReleaseBtn');
-      const originalContent = btn.innerHTML;
-      btn.innerHTML = '<span class="spinner"></span> Creando...';
-      btn.disabled = true;
-      
-      const result = await window.api.createRelease({ owner, repo, tag, name, filePath, body });
-      
-      btn.innerHTML = originalContent;
-      btn.disabled = false;
-      
-      if (result.success) {
-        log(`✅ Release creada: ${result.url}`, 'success');
-        document.getElementById('releaseResult').innerHTML = `
-          <div style="padding: 16px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2); border-radius: 10px;">
-            <p style="color: #00ff88; margin-bottom: 12px;"><i class="fas fa-check-circle"></i> Release creada exitosamente</p>
-            <a href="${result.url}" target="_blank" class="btn btn-primary btn-sm">
-              <i class="fas fa-external-link-alt"></i> Ver en GitHub
-            </a>
-          </div>
-        `;
-        
-        // Clear form
-        document.getElementById('tag').value = '';
-        document.getElementById('name').value = '';
-        document.getElementById('filePath').value = '';
-        document.getElementById('body').value = '';
-        
-        // Update stats
-        const releasesEl = document.getElementById('totalReleases');
-        releasesEl.textContent = parseInt(releasesEl.textContent) + 1;
-      } else {
-        log(`Error: ${result.error}`, 'error');
-        document.getElementById('releaseResult').innerHTML = `
-          <div style="padding: 16px; background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.2); border-radius: 10px;">
-            <p style="color: #ff6b6b;"><i class="fas fa-exclamation-circle"></i> Error: ${result.error}</p>
-          </div>
-        `;
-      }
+    function updateConnectionStatus(connected, username) {
+      const dot = document.getElementById('connectionDot');
+      const text = document.getElementById('connectionText');
+      dot.className = 'status-dot ' + (connected ? 'connected' : '');
+      text.textContent = connected ? username : 'Desconectado';
     }
     
-    // List releases
-    async function listReleases() {
-      const owner = document.getElementById('listOwner').value.trim();
-      const repo = document.getElementById('listRepo').value.trim();
-      
-      if (!owner || !repo) {
-        log('Error: Ingresa propietario y repositorio', 'error');
-        return;
-      }
-      
-      log(`Obteniendo releases de ${owner}/${repo}...`, 'info');
-      
-      const result = await window.api.listReleases({ owner, repo });
-      const listContainer = document.getElementById('releasesList');
-      
-      if (result.success) {
-        if (result.releases.length === 0) {
-          listContainer.innerHTML = `
-            <div class="empty-state">
-              <i class="fas fa-box-open"></i>
-              <h3>No hay releases</h3>
-              <p>Este repositorio no tiene releases aún</p>
-            </div>
-          `;
-          log('No se encontraron releases', 'info');
-        } else {
-          listContainer.innerHTML = `
-            <div class="releases-grid">
-              ${result.releases.map(r => `
-                <div class="release-card">
-                  <div class="release-header">
-                    <div class="release-info">
-                      <h3>${r.name || r.tag}</h3>
-                      <span class="release-tag">${r.tag}</span>
-                    </div>
-                    <div class="release-actions">
-                      <a href="${r.url}" target="_blank" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-external-link-alt"></i>
-                      </a>
-                    </div>
-                  </div>
-                  <div class="release-meta">
-                    <i class="fas fa-calendar"></i> ${new Date(r.created_at).toLocaleDateString()}
-                  </div>
-                  ${r.assets.length > 0 ? `
-                    <div class="release-assets">
-                      ${r.assets.map(a => `
-                        <span class="asset-badge">
-                          <i class="fas fa-file"></i> ${a.name}
-                        </span>
-                      `).join('')}
-                    </div>
-                  ` : ''}
-                </div>
-              `).join('')}
-            </div>
-          `;
-          log(`Se encontraron ${result.releases.length} releases`, 'success');
-        }
-      } else {
-        log(`Error: ${result.error}`, 'error');
-        listContainer.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Error al cargar releases</h3>
-            <p>${result.error}</p>
-          </div>
-        `;
-      }
-    }
-    
-    // Chat functionality
+    // Chat Functions
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     
-    async function sendChatMessage() {
+    async function sendMessage() {
       const message = chatInput.value.trim();
       if (!message) return;
       
       // Add user message
-      const userDiv = document.createElement('div');
-      userDiv.className = 'message user';
-      userDiv.innerHTML = `<div class="message-header">Tú</div>${message}`;
-      chatMessages.appendChild(userDiv);
-      
+      addMessage(message, 'user');
       chatInput.value = '';
-      chatMessages.scrollTop = chatMessages.scrollHeight;
       
       // Show loading
-      const loadingDiv = document.createElement('div');
-      loadingDiv.className = 'message assistant';
-      loadingDiv.id = 'loadingMessage';
-      loadingDiv.innerHTML = `<div class="message-header">XPE Agent</div><span class="spinner"></span> Procesando...`;
-      chatMessages.appendChild(loadingDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      const loadingId = addLoadingMessage();
       
-      // Simple command parsing (in production, this would call the AI)
-      setTimeout(() => {
-        loadingDiv.remove();
+      try {
+        const response = await window.api.aiChat({
+          message: message,
+          systemPrompt: getCodeGenerationSystemPrompt()
+        });
         
-        let response = '';
-        const lowerMessage = message.toLowerCase();
+        removeMessage(loadingId);
         
-        if (lowerMessage.includes('crear release') || lowerMessage.includes('create release')) {
-          response = 'Voy a crear la release. Por favor, ve a la sección "Crear Release" y completa los datos necesarios: propietario, repositorio, tag y archivo.';
-          document.querySelector('.nav-item[data-section="create"]').click();
-        } else if (lowerMessage.includes('ver releases') || lowerMessage.includes('listar releases')) {
-          response = 'Mostrando releases. Ve a la sección "Releases" para ver todos los releases del repositorio.';
-          document.querySelector('.nav-item[data-section="releases"]').click();
-        } else if (lowerMessage.includes('dll') || lowerMessage.includes('exe')) {
-          response = 'Para subir archivos DLL o EXE, ve a "Crear Release", selecciona el archivo en el campo correspondiente y la aplicación lo subirá automáticamente a GitHub Releases.';
-        } else if (lowerMessage.includes('token') || lowerMessage.includes('configurar')) {
-          response = 'Puedes configurar tu GitHub Token en la sección "Configuración". Asegúrate de que el token tenga permisos de escritura.';
-          document.querySelector('.nav-item[data-section="settings"]').click();
+        if (response.success) {
+          addMessage(response.response, 'assistant');
+          parseAndDisplayCode(response.response);
+          log('Respuesta de IA recibida', 'success');
         } else {
-          response = 'Entiendo tu mensaje. Puedo ayudarte a crear releases, gestionar archivos DLL/EXE y automatizar tareas en GitHub. ¿Hay algo específico que necesites?';
+          if (response.code === 'NO_GROQ_KEY') {
+            addMessage('Por favor, configura tu Groq API Key en la configuración para usar las capacidades de IA.', 'assistant');
+            log('Groq API no configurada', 'warning');
+          } else {
+            addMessage(`Error: ${response.error}`, 'assistant');
+            log(`Error de IA: ${response.error}`, 'error');
+          }
         }
-        
-        const assistantDiv = document.createElement('div');
-        assistantDiv.className = 'message assistant';
-        assistantDiv.innerHTML = `<div class="message-header">XPE Agent</div>${response}`;
-        chatMessages.appendChild(assistantDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        
-        log(`Chat: ${message.substring(0, 50)}...`, 'info');
-      }, 1000);
+      } catch (error) {
+        removeMessage(loadingId);
+        addMessage(`Error de conexión: ${error.message}`, 'assistant');
+        log(`Error: ${error.message}`, 'error');
+      }
     }
     
-    chatInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendChatMessage();
+    function addMessage(content, type) {
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      
+      let html = `<div class="message-header">`;
+      if (type === 'assistant') {
+        html += `<i class="fas fa-robot"></i> XPE Agent`;
+      } else {
+        html += `<i class="fas fa-user"></i> Tú`;
+      }
+      html += `</div>`;
+      html += content;
+      
+      div.innerHTML = html;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      return div;
+    }
+    
+    function addLoadingMessage() {
+      const div = document.createElement('div');
+      div.className = 'message assistant loading';
+      div.innerHTML = `
+        <div class="message-header"><i class="fas fa-robot"></i> XPE Agent</div>
+        <span class="spinner"></span> Procesando...
+      `;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return div;
+    }
+    
+    function removeMessage(element) {
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    }
+    
+    function parseAndDisplayCode(response) {
+      // Extract code blocks
+      const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+      const matches = [...response.matchAll(codeBlockRegex)];
+      
+      if (matches.length > 0) {
+        let fileIndex = 1;
+        currentFiles = {};
+        
+        matches.forEach((match, index) => {
+          const language = match[1] || 'txt';
+          const code = match[2].trim();
+          
+          const ext = getFileExtension(language);
+          const filename = fileIndex === 1 && matches.length === 1 ? 
+            `main${ext}` : 
+            `file${fileIndex}${ext}`;
+          
+          currentFiles[filename] = code;
+          
+          if (fileIndex === 1) {
+            setEditorContent(code);
+            updateTab(filename);
+          }
+          
+          fileIndex++;
+        });
+        
+        log(`Extraídos ${matches.length} archivos de código`, 'success');
+      }
+    }
+    
+    function getFileExtension(lang) {
+      const extensions = {
+        'cpp': '.cpp', 'c++': '.cpp', 'c': '.c',
+        'csharp': '.cs', 'cs': '.cs', 'c#': '.cs',
+        'python': '.py', 'py': '.py',
+        'javascript': '.js', 'js': '.js',
+        'typescript': '.ts', 'ts': '.ts',
+        'java': '.java',
+        'cmake': 'CMakeLists.txt',
+        'yaml': '.yml', 'yml': '.yml'
+      };
+      return extensions[lang.toLowerCase()] || '.txt';
+    }
+    
+    // Editor Functions
+    function setEditorContent(content) {
+      document.getElementById('codeEditor').value = content;
+    }
+    
+    function getEditorContent() {
+      return document.getElementById('codeEditor').value;
+    }
+    
+    function saveCode() {
+      currentFiles[activeFile] = getEditorContent();
+      log(`Guardado: ${activeFile}`, 'success');
+    }
+    
+    function copyCode() {
+      const code = getEditorContent();
+      navigator.clipboard.writeText(code);
+      log('Código copiado al portapapeles', 'success');
+    }
+    
+    function updateTab(filename) {
+      const tabs = document.querySelectorAll('.editor-tab:not(.add-tab)');
+      tabs.forEach(tab => {
+        if (tab.dataset.file === filename || tab.querySelector('span').textContent === filename) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+    }
+    
+    function addNewTab() {
+      const filename = prompt('Nombre del archivo:', 'newfile.cpp');
+      if (filename) {
+        currentFiles[filename] = '';
+        const tab = document.createElement('div');
+        tab.className = 'editor-tab';
+        tab.dataset.file = filename;
+        tab.innerHTML = `
+          <i class="fas fa-file-code"></i>
+          <span>${filename}</span>
+          <span class="close-tab" onclick="closeTab(event, this)">×</span>
+        `;
+        tab.onclick = () => switchToTab(tab);
+        
+        const addBtn = document.querySelector('.add-tab');
+        addBtn.before(tab);
+        switchToTab(tab);
+      }
+    }
+    
+    function switchToTab(tab) {
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeFile = tab.dataset.file;
+      setEditorContent(currentFiles[activeFile] || '');
+    }
+    
+    function closeTab(btn, element) {
+      event.stopPropagation();
+      const tab = element.parentElement;
+      tab.remove();
+      delete currentFiles[activeFile];
+      activeFile = Object.keys(currentFiles)[0] || 'main.cpp';
+      setEditorContent(currentFiles[activeFile] || '');
+      updateTab(activeFile);
+    }
+    
+    // Project Functions
+    async function createOrUpdateProject() {
+      const owner = document.getElementById('owner').value.trim();
+      const repo = document.getElementById('repo').value.trim();
+      
+      if (!owner || !repo) {
+        log('Error: Propietario y repositorio requeridos', 'error');
+        return;
+      }
+      
+      log(`Creando/actualizando proyecto ${owner}/${repo}...`, 'info');
+      
+      // Create repository if needed
+      const createResult = await window.api.createRepo({
+        name: repo,
+        description: 'Proyecto creado por XPE Agent',
+        private: true
+      });
+      
+      if (createResult.success) {
+        log(`Repositorio ${createResult.repo.full_name} listo`, 'success');
+      }
+      
+      // Get templates
+      const templatesResult = await window.api.getWorkflowTemplates();
+      const buildType = document.getElementById('buildType').value;
+      const template = templatesResult.templates[buildType];
+      
+      // Upload code files
+      const files = Object.entries(currentFiles).map(([name, content]) => ({
+        path: name,
+        content: content,
+        message: `Add ${name}`
+      }));
+      
+      if (files.length > 0) {
+        const filesResult = await window.api.createMultipleFiles({
+          owner,
+          repo,
+          files: files
+        });
+        
+        if (filesResult.success) {
+          log(`${filesResult.results.length} archivos subidos`, 'success');
+        }
+      }
+      
+      // Trigger build
+      const workflowResult = await window.api.triggerWorkflow({
+        owner,
+        repo,
+        workflow: template.content
+      });
+      
+      if (workflowResult.success) {
+        log('Build iniciado en GitHub Actions', 'success');
+        startBuildPolling(owner, repo);
+      }
+    }
+    
+    async function compileProject(type) {
+      const owner = document.getElementById('owner').value.trim();
+      const repo = document.getElementById('repo').value.trim();
+      
+      if (!owner || !repo) {
+        log('Error: Configura el proyecto primero', 'error');
+        return;
+      }
+      
+      if (!currentFiles[activeFile]) {
+        log('Error: No hay código para compilar', 'error');
+        return;
+      }
+      
+      log(`Iniciando compilación ${type.toUpperCase()}...`, 'info');
+      isBuilding = true;
+      
+      // Save current code
+      currentFiles[activeFile] = getEditorContent();
+      
+      // Create/update files
+      const files = Object.entries(currentFiles).map(([name, content]) => ({
+        path: name,
+        content: content,
+        message: `Update code for ${type.toUpperCase()} build`
+      }));
+      
+      await window.api.createMultipleFiles({ owner, repo, files });
+      
+      // Get template and trigger build
+      const templatesResult = await window.api.getWorkflowTemplates();
+      const templateKey = type === 'dll' ? 'cpp-dll' : 'cpp-exe';
+      const template = templatesResult.templates[templateKey];
+      
+      const result = await window.api.triggerWorkflow({
+        owner,
+        repo,
+        workflow: template.content
+      });
+      
+      if (result.success) {
+        startBuildPolling(owner, repo);
+      }
+    }
+    
+    async function startBuildPolling(owner, repo) {
+      updateBuildStep(1, 'running', 'Iniciando build en GitHub...');
+      updateProgress(10);
+      
+      // Wait a moment for workflow to start
+      await sleep(3000);
+      
+      // Get latest workflow run
+      const runsResult = await window.api.getWorkflowRuns({ owner, repo });
+      
+      if (runsResult.success && runsResult.runs.length > 0) {
+        currentRunId = runsResult.runs[0].id;
+        updateBuildStep(1, 'success', 'Build iniciado');
+        updateBuildStep(2, 'running', 'Compilando código...');
+        updateProgress(30);
+        
+        pollBuildStatus(owner, repo);
+      }
+    }
+    
+    async function pollBuildStatus(owner, repo) {
+      if (!currentRunId || !isBuilding) return;
+      
+      const statusResult = await window.api.getWorkflowRunStatus({
+        owner,
+        repo,
+        runId: currentRunId
+      });
+      
+      if (statusResult.success) {
+        const status = statusResult.status;
+        const conclusion = statusResult.conclusion;
+        
+        if (status === 'in_progress') {
+          updateBuildStep(2, 'running', 'Compilando...');
+          updateProgress(50);
+          log('Build en progreso...', 'info');
+          
+          // Continue polling
+          setTimeout(() => pollBuildStatus(owner, repo), 5000);
+        } else if (status === 'completed') {
+          if (conclusion === 'success') {
+            updateBuildStep(2, 'success', 'Compilación exitosa');
+            updateBuildStep(3, 'running', 'Generando artefacto...');
+            updateProgress(70);
+            log('Build completado', 'success');
+            
+            // Get artifacts
+            await checkArtifacts(owner, repo);
+            
+            updateBuildStep(3, 'success', 'Artegacto listo');
+            updateBuildStep(4, 'success', '¡Listo!');
+            updateProgress(100);
+            document.getElementById('downloadBtn').disabled = false;
+            
+            // Notify
+            await window.api.showNotification({
+              title: 'XPE Agent',
+              body: '¡Tu DLL/EXE está listo para descargar!'
+            });
+          } else {
+            updateBuildStep(2, 'error', 'Error de compilación');
+            updateProgress(0);
+            log('Build fallido', 'error');
+          }
+          isBuilding = false;
+        }
+      } else {
+        setTimeout(() => pollBuildStatus(owner, repo), 5000);
+      }
+    }
+    
+    async function checkArtifacts(owner, repo) {
+      const result = await window.api.getArtifacts({ owner, repo });
+      if (result.success && result.artifacts.length > 0) {
+        const artifactList = document.getElementById('artifactList');
+        artifactList.innerHTML = result.artifacts.map(a => `
+          <div class="artifact-item">
+            <div class="artifact-info">
+              <div class="artifact-icon">
+                <i class="fas fa-file-binary"></i>
+              </div>
+              <div>
+                <div class="artifact-name">${a.name}</div>
+                <div class="artifact-size">${formatSize(a.size)}</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="downloadArtifact(${a.id})">
+              <i class="fas fa-download"></i>
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+    
+    async function downloadArtifact(artifactId) {
+      const owner = document.getElementById('owner').value.trim();
+      const repo = document.getElementById('repo').value.trim();
+      
+      log('Descargando artefacto...', 'info');
+      
+      const result = await window.api.downloadArtifact({
+        owner,
+        repo,
+        artifactId: artifactId,
+        token: (await window.api.getConfig()).githubToken
+      });
+      
+      if (result.success) {
+        log(`Artefacto descargado: ${result.path}`, 'success');
+        
+        // Create release
+        const releaseResult = await window.api.createReleaseWithAsset({
+          owner,
+          repo,
+          tag: `v${Date.now()}`,
+          name: `Build ${Date.now()}`,
+          body: 'Artefacto generado por XPE Agent',
+          assetPath: result.path
+        });
+        
+        if (releaseResult.success) {
+          log(`Release creada: ${releaseResult.url}`, 'success');
+        }
+      }
+    }
+    
+    async function downloadAndRelease() {
+      const owner = document.getElementById('owner').value.trim();
+      const repo = document.getElementById('repo').value.trim();
+      
+      const artifactsResult = await window.api.getArtifacts({ owner, repo });
+      if (artifactsResult.success && artifactsResult.artifacts.length > 0) {
+        await downloadArtifact(artifactsResult.artifacts[0].id);
+      }
+    }
+    
+    async function refreshBuildStatus() {
+      if (currentRunId) {
+        const owner = document.getElementById('owner').value.trim();
+        const repo = document.getElementById('repo').value.trim();
+        await pollBuildStatus(owner, repo);
+      }
+    }
+    
+    // Build UI Updates
+    function updateBuildStep(step, status, text) {
+      const icon = document.getElementById(`step${step}Icon`);
+      const textEl = document.getElementById(`step${step}Text`);
+      
+      icon.className = `build-step-icon ${status}`;
+      icon.innerHTML = status === 'running' ? '<i class="fas fa-spinner fa-spin"></i>' : 
+                       status === 'success' ? '<i class="fas fa-check"></i>' :
+                       status === 'error' ? '<i class="fas fa-times"></i>' :
+                       '<i class="fas fa-clock"></i>';
+      
+      textEl.textContent = text;
+    }
+    
+    function updateProgress(percent) {
+      document.getElementById('progressFill').style.width = percent + '%';
+      document.getElementById('progressPercent').textContent = percent + '%';
+    }
+    
+    function updateBuildStatusText(text) {
+      document.getElementById('progressStatus').textContent = text;
+    }
+    
+    function addLog(message, type = 'info') {
+      const logs = document.getElementById('buildLogs');
+      const line = document.createElement('div');
+      line.className = `log-line ${type}`;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logs.appendChild(line);
+      logs.scrollTop = logs.scrollHeight;
+    }
+    
+    function log(message, type = 'info') {
+      addLog(message, type);
+    }
+    
+    // Settings
+    function openSettings() {
+      document.getElementById('settingsModal').classList.add('active');
+    }
+    
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('active');
+    }
+    
+    async function saveSettings() {
+      const config = {
+        githubToken: document.getElementById('githubToken').value.trim(),
+        groqApiKey: document.getElementById('groqApiKey').value.trim(),
+        workDir: document.getElementById('workDir').value.trim(),
+        defaultOwner: document.getElementById('owner').value.trim()
+      };
+      
+      await window.api.saveConfig(config);
+      
+      if (config.githubToken) {
+        await checkGitHubConnection(config.githubToken);
+      }
+      
+      log('Configuración guardada', 'success');
+      closeSettings();
+    }
+    
+    // UI Helpers
+    function toggleSection(header) {
+      header.classList.toggle('collapsed');
+      header.nextElementSibling.classList.toggle('collapsed');
+    }
+    
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    // Chat Input Enter key
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
+    
+    // System Prompt for Code Generation
+    function getCodeGenerationSystemPrompt() {
+      return `Eres XPE Agent, un experto en desarrollo de software. Tu especialidad es crear DLLs y EXEs para Windows.
+
+INSTRUCCIONES:
+1. Cuando el usuario pida una DLL, genera código C++ con la estructura correcta para un DLL de Windows
+2. Cuando pida un EXE, genera código C++/C# para una aplicación de consola o GUI
+3. SIEMPRE incluye el código completo y funcional
+4. El código debe compilar sin errores
+5. Responde principalmente en español, pero el código en inglés
+
+ESTRUCTURA DLL C++:
+\`\`\`cpp
+// nombre_dll.cpp
+#include <windows.h>
+
+// Tu código aquí...
+
+extern "C" __declspec(dllexport) void MiFuncion() {
+    // Implementación
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+    switch (ul_reason_for_call) {
+        case DLL_PROCESS_ATTACH:
+        case DLL_THREAD_ATTACH:
+        case DLL_THREAD_DETACH:
+        case DLL_PROCESS_DETACH:
+            break;
+    }
+    return TRUE;
+}
+\`\`\`
+
+EJEMPLOS DE RESPUESTA:
+- Explica brevemente qué vas a crear
+- Proporciona el código en bloques de \`\`\`
+- Menciona cómo compilar con CMake o Visual Studio
+- Ofrece ayuda adicional si necesita cambios
+
+Recuerda: Tu objetivo es crear herramientas funcionales que el usuario pueda usar inmediatamente.`;
+    }
+    
+    // Resizable panes
+    function setupResizers() {
+      const resizer1 = document.getElementById('resizer1');
+      const resizer2 = document.getElementById('resizer2');
+      const chatPane = document.querySelector('.chat-pane');
+      const editorPane = document.querySelector('.editor-pane');
+      const statusPane = document.querySelector('.status-pane');
+      
+      setupResizer(resizer1, chatPane, editorPane, 'width');
+      setupResizer(resizer2, editorPane, statusPane, 'width');
+    }
+    
+    function setupResizer(resizer, left, right, dimension) {
+      let isResizing = false;
+      
+      resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        document.body.style.cursor = dimension === 'width' ? 'col-resize' : 'row-resize';
+        document.body.style.overflow = 'hidden';
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const containerWidth = document.querySelector('.main-content').offsetWidth;
+        const leftPercent = (e.clientX / containerWidth) * 100;
+        
+        if (leftPercent > 15 && leftPercent < 50) {
+          left.style.width = leftPercent + '%';
+          right.style.width = (100 - leftPercent - 4) + '%';
+        }
+      });
+      
+      document.addEventListener('mouseup', () => {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.overflow = '';
+      });
+    }
     
     // Initialize app
     init();
+    setupResizers();
   </script>
 </body>
 </html>
