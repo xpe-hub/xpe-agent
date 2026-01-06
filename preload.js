@@ -20,7 +20,6 @@ contextBridge.exposeInMainWorld('api', {
   triggerWorkflow: (data) => ipcRenderer.invoke('trigger-workflow', data),
   getWorkflowRuns: (data) => ipcRenderer.invoke('get-workflow-runs', data),
   getWorkflowRunStatus: (data) => ipcRenderer.invoke('get-workflow-run-status', data),
-  getWorkflowLogs: (data) => ipcRenderer.invoke('get-workflow-logs', data),
   
   // Artifacts
   getArtifacts: (data) => ipcRenderer.invoke('get-artifacts', data),
@@ -30,10 +29,11 @@ contextBridge.exposeInMainWorld('api', {
   createReleaseWithAsset: (data) => ipcRenderer.invoke('create-release-with-asset', data),
   listReleases: (data) => ipcRenderer.invoke('list-releases', data),
   
-  // AI Chat
+  // AI Chat v3.0 with MiniMax
   aiChat: (data) => ipcRenderer.invoke('ai-chat', data),
-  aiChatStream: (data) => ipcRenderer.invoke('ai-chat-stream', data),
+  aiClearCache: () => ipcRenderer.invoke('ai-clear-cache'),
   aiClearHistory: () => ipcRenderer.invoke('ai-clear-history'),
+  aiGetStatus: () => ipcRenderer.invoke('ai-get-status'),
   
   // Templates
   getWorkflowTemplates: () => ipcRenderer.invoke('get-workflow-templates'),
@@ -41,7 +41,6 @@ contextBridge.exposeInMainWorld('api', {
   // File Dialogs
   selectFile: () => ipcRenderer.invoke('select-file'),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
-  saveFileDialog: (data) => ipcRenderer.invoke('save-file-dialog', data),
   
   // Notifications & External
   showNotification: (data) => ipcRenderer.invoke('show-notification', data),

@@ -2,12 +2,9 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Notification } = requi
 const { Octokit } = require('octokit');
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
-const https = require('https');
 
 let mainWindow;
 let octokit = null;
-let groqClient = null;
 
 // Configuration file path
 const CONFIG_PATH = path.join(app.getPath('userData'), 'xpe-agent-config.json');
@@ -21,8 +18,12 @@ function loadConfig() {
       return {
         githubToken: config.githubToken || '',
         groqApiKey: config.groqApiKey || '',
+        minimaxApiKey: config.minimaxApiKey || '',
         defaultOwner: config.defaultOwner || 'xpe-hub',
-        workDir: config.workDir || app.getPath('downloads')
+        workDir: config.workDir || app.getPath('downloads'),
+        cacheEnabled: config.cacheEnabled !== false,
+        autoFallback: config.autoFallback !== false,
+        preferredProvider: config.preferredProvider || 'minimax'
       };
     }
   } catch (error) {
@@ -31,8 +32,12 @@ function loadConfig() {
   return { 
     githubToken: '', 
     groqApiKey: '', 
+    minimaxApiKey: '',
     defaultOwner: 'xpe-hub',
-    workDir: app.getPath('downloads')
+    workDir: app.getPath('downloads'),
+    cacheEnabled: true,
+    autoFallback: true,
+    preferredProvider: 'minimax'
   };
 }
 
@@ -45,12 +50,141 @@ function saveConfig(config) {
   }
 }
 
-// Groq API Client
+// Cache system for local responses
+class LocalCache {
+  constructor(cacheDir) {
+    this.cacheDir = cacheDir;
+    this.cacheFile = path.join(cacheDir, 'xpe-agent-cache.json');
+    this.cache = this.loadCache();
+  }
+
+  loadCache() {
+    try {
+      if (fs.existsSync(this.cacheFile)) {
+        return JSON.parse(fs.readFileSync(this.cacheFile, 'utf8'));
+      }
+    } catch (error) {
+      console.error('Error loading cache:', error);
+    }
+    return { responses: {}, templates: {} };
+  }
+
+  saveCache() {
+    try {
+      fs.writeFileSync(this.cacheFile, JSON.stringify(this.cache, null, 2));
+    } catch (error) {
+      console.error('Error saving cache:', error);
+    }
+  }
+
+  get(key) {
+    const item = this.cache.responses[key];
+    if (item) {
+      // Check if expired (24 hours)
+      if (Date.now() - item.timestamp < 24 * 60 * 60 * 1000) {
+        return item.value;
+      }
+    }
+    return null;
+  }
+
+  set(key, value) {
+    this.cache.responses[key] = {
+      value: value,
+      timestamp: Date.now()
+    };
+    this.saveCache();
+  }
+
+  getTemplate(type) {
+    return this.cache.templates[type] || null;
+  }
+
+  saveTemplate(type, template) {
+    this.cache.templates[type] = template;
+    this.saveCache();
+  }
+}
+
+// MiniMax API Client
+class MiniMaxClient {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.baseUrl = 'https://api.minimax.chat/v1';
+    this.model = 'minimax-m2'; // Primary model
+    this.modelStable = 'minimax-m2-stable';
+    this.messages = [];
+  }
+
+  async chat(systemPrompt, userMessage, model = 'minimax-m2') {
+    if (!this.apiKey) {
+      throw new Error('MiniMax API key not configured');
+    }
+
+    this.messages.push({ role: 'user', content: userMessage });
+
+    const payload = {
+      model: model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...this.messages.slice(-20)
+      ],
+      temperature: 0.2,
+      max_tokens: 8192,
+      stream: false
+    };
+
+    return new Promise((resolve, reject) => {
+      const data = JSON.stringify(payload);
+      
+      const options = {
+        hostname: 'api.minimax.chat',
+        path: '/v1/text/chatcompletion_v2',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'Content-Length': data.length
+        }
+      };
+
+      const https = require('https');
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(body);
+            if (response.base_resp && response.base_resp.status_code !== 0) {
+              reject(new Error(response.base_resp.status_msg || 'MiniMax API error'));
+            } else {
+              const choices = response.choices || response.choices || [];
+              const assistantMessage = choices[0]?.message?.content || '';
+              this.messages.push({ role: 'assistant', content: assistantMessage });
+              resolve(assistantMessage);
+            }
+          } catch (e) {
+            reject(new Error('Failed to parse MiniMax response'));
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.write(data);
+      req.end();
+    });
+  }
+
+  clearHistory() {
+    this.messages = [];
+  }
+}
+
+// Groq API Client (fallback)
 class GroqClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.groq.com/openai/v1';
-    this.model = 'llama-3.3-70b-versatile'; // Best for coding
+    this.model = 'llama-3.3-70b-versatile';
     this.messages = [];
   }
 
@@ -65,7 +199,7 @@ class GroqClient {
       model: this.model,
       messages: [
         { role: 'system', content: systemPrompt },
-        ...this.messages.slice(-20) // Keep last 20 messages for context
+        ...this.messages.slice(-20)
       ],
       temperature: 0.2,
       max_tokens: 8192,
@@ -86,6 +220,7 @@ class GroqClient {
         }
       };
 
+      const https = require('https');
       const req = https.request(options, (res) => {
         let body = '';
         res.on('data', chunk => body += chunk);
@@ -113,6 +248,114 @@ class GroqClient {
 
   clearHistory() {
     this.messages = [];
+  }
+}
+
+// AI Provider Manager with Auto-Fallback
+class AIProviderManager {
+  constructor(config) {
+    this.config = config;
+    this.minimaxClient = config.minimaxApiKey ? new MiniMaxClient(config.minimaxApiKey) : null;
+    this.groqClient = config.groqApiKey ? new GroqClient(config.groqApiKey) : null;
+    this.cache = new LocalCache(config.workDir);
+    this.lastProvider = null;
+    this.lastError = null;
+  }
+
+  async chat(systemPrompt, userMessage) {
+    const cacheKey = this.generateCacheKey(userMessage);
+    
+    // Check cache first
+    if (this.config.cacheEnabled) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return { 
+          success: true, 
+          response: cached, 
+          source: 'cache',
+          provider: null
+        };
+      }
+    }
+
+    const providers = this.getProviderPriority();
+
+    for (const provider of providers) {
+      try {
+        let response;
+        
+        if (provider === 'minimax-m2') {
+          response = await this.minimaxClient.chat(systemPrompt, userMessage, 'minimax-m2');
+        } else if (provider === 'minimax-m2-stable') {
+          response = await this.minimaxClient.chat(systemPrompt, userMessage, 'minimax-m2-stable');
+        } else if (provider === 'groq') {
+          response = await this.groqClient.chat(systemPrompt, userMessage);
+        }
+
+        if (response) {
+          this.lastProvider = provider;
+          this.lastError = null;
+
+          // Cache the response
+          if (this.config.cacheEnabled) {
+            this.cache.set(cacheKey, response);
+          }
+
+          return { 
+            success: true, 
+            response: response,
+            source: 'api',
+            provider: provider
+          };
+        }
+      } catch (error) {
+        console.error(`Provider ${provider} failed:`, error);
+        continue;
+      }
+    }
+
+    return { 
+      success: false, 
+      error: this.lastError || 'All providers failed',
+      providers: providers 
+    };
+  }
+
+  getProviderPriority() {
+    const providers = [];
+    
+    // Priority based on config
+    if (this.config.preferredProvider === 'minimax') {
+      if (this.minimaxClient) {
+        providers.push('minimax-m2', 'minimax-m2-stable');
+      }
+      if (this.groqClient && this.config.autoFallback) {
+        providers.push('groq');
+      }
+    } else {
+      if (this.groqClient) {
+        providers.push('groq');
+      }
+      if (this.minimaxClient && this.config.autoFallback) {
+        providers.push('minimax-m2', 'minimax-m2-stable');
+      }
+    }
+    
+    return providers;
+  }
+
+  generateCacheKey(message) {
+    // Simple hash-like key
+    return Buffer.from(message.toLowerCase().trim()).toString('base64').substring(0, 64);
+  }
+
+  clearCache() {
+    this.cache = new LocalCache(this.config.workDir);
+  }
+
+  clearHistory() {
+    if (this.minimaxClient) this.minimaxClient.clearHistory();
+    if (this.groqClient) this.groqClient.clearHistory();
   }
 }
 
@@ -153,20 +396,15 @@ function createMenu() {
     {
       label: 'Compilar',
       submenu: [
-        { label: 'Compilar y Generar DLL', accelerator: 'CmdOrCtrl+D', click: () => mainWindow?.webContents.send('action', 'compile-dll') },
-        { label: 'Compilar y Generar EXE', accelerator: 'CmdOrCtrl+E', click: () => mainWindow?.webContents.send('action', 'compile-exe') },
-        { label: 'Ver Estado de Build', accelerator: 'CmdOrCtrl+B', click: () => mainWindow?.webContents.send('nav-to', 'builds') }
+        { label: 'Compilar DLL', accelerator: 'CmdOrCtrl+D', click: () => mainWindow?.webContents.send('action', 'compile-dll') },
+        { label: 'Compilar EXE', accelerator: 'CmdOrCtrl+E', click: () => mainWindow?.webContents.send('action', 'compile-exe') },
+        { label: 'Ver Builds', accelerator: 'CmdOrCtrl+B', click: () => mainWindow?.webContents.send('nav-to', 'builds') }
       ]
     },
     {
       label: 'Ayuda',
       submenu: [
-        {
-          label: 'Documentación',
-          click: async () => {
-            await shell.openExternal('https://github.com/xpe-hub/xpe-agent/wiki');
-          }
-        },
+        { label: 'Documentación', click: async () => { await shell.openExternal('https://github.com/xpe-hub/xpe-agent/wiki'); } },
         { type: 'separator' },
         { label: 'Acerca de XPE Agent', click: () => mainWindow?.webContents.send('show-about') }
       ]
@@ -200,7 +438,7 @@ function createWindow() {
     height: 900,
     minWidth: 1200,
     minHeight: 700,
-    title: 'XPE Agent - AI Development Studio',
+    title: 'XPE Agent v3.0 - AI Development Studio with MiniMax',
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -232,9 +470,6 @@ function createWindow() {
   if (config.githubToken) {
     octokit = new Octokit({ auth: config.githubToken });
   }
-  if (config.groqApiKey) {
-    groqClient = new GroqClient(config.groqApiKey);
-  }
 }
 
 app.whenReady().then(() => {
@@ -265,15 +500,53 @@ ipcMain.handle('save-config', async (event, config) => {
   if (config.githubToken) {
     octokit = new Octokit({ auth: config.githubToken });
   }
-  if (config.groqApiKey) {
-    groqClient = new GroqClient(config.groqApiKey);
-  }
   
   return { success: true };
 });
 
 ipcMain.handle('get-config', async () => {
   return loadConfig();
+});
+
+// AI Chat with Provider Management
+ipcMain.handle('ai-chat', async (event, data) => {
+  const config = loadConfig();
+  const manager = new AIProviderManager(config);
+  
+  return await manager.chat(
+    data.systemPrompt || getDefaultSystemPrompt(),
+    data.message
+  );
+});
+
+ipcMain.handle('ai-clear-cache', async () => {
+  const config = loadConfig();
+  const manager = new AIProviderManager(config);
+  manager.clearCache();
+  return { success: true };
+});
+
+ipcMain.handle('ai-clear-history', async () => {
+  const config = loadConfig();
+  const manager = new AIProviderManager(config);
+  manager.clearHistory();
+  return { success: true };
+});
+
+ipcMain.handle('ai-get-status', async () => {
+  const config = loadConfig();
+  const manager = new AIProviderManager(config);
+  const providers = manager.getProviderPriority();
+  
+  return {
+    success: true,
+    providers: providers,
+    minimaxConfigured: !!config.minimaxApiKey,
+    groqConfigured: !!config.groqApiKey,
+    cacheEnabled: config.cacheEnabled,
+    autoFallback: config.autoFallback,
+    preferredProvider: config.preferredProvider
+  };
 });
 
 // GitHub User
@@ -409,7 +682,6 @@ ipcMain.handle('trigger-workflow', async (event, data) => {
   }
 
   try {
-    // First, create/update the workflow file
     const workflowContent = Buffer.from(data.workflow).toString('base64');
     
     await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
@@ -420,7 +692,6 @@ ipcMain.handle('trigger-workflow', async (event, data) => {
       content: workflowContent
     });
 
-    // Then trigger the workflow
     const { data: workflowRun } = await octokit.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches', {
       owner: data.owner,
       repo: data.repo,
@@ -487,36 +758,6 @@ ipcMain.handle('get-workflow-run-status', async (event, data) => {
   }
 });
 
-ipcMain.handle('get-workflow-logs', async (event, data) => {
-  if (!octokit) {
-    return { success: false, error: 'GitHub Token no configurado' };
-  }
-
-  try {
-    const { data: jobs } = await octokit.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs', {
-      owner: data.owner,
-      repo: data.repo,
-      run_id: data.runId
-    });
-
-    return {
-      success: true,
-      jobs: jobs.jobs.map(job => ({
-        name: job.name,
-        status: job.status,
-        conclusion: job.conclusion,
-        steps: job.steps.map(step => ({
-          name: step.name,
-          status: step.status,
-          conclusion: step.conclusion
-        }))
-      }))
-    };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
 // Artifacts
 ipcMain.handle('get-artifacts', async (event, data) => {
   if (!octokit) {
@@ -553,15 +794,13 @@ ipcMain.handle('download-artifact', async (event, data) => {
     const config = loadConfig();
     const downloadPath = path.join(config.workDir, `xpe-artifact-${Date.now()}.zip`);
     
-    // Get the artifact download URL
     const { data: artifact } = await octokit.request('GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}', {
       owner: data.owner,
       repo: data.repo,
       artifact_id: data.artifactId
     });
 
-    // Download the artifact
-    await downloadFile(artifact.archive_download_url, downloadPath, data.token);
+    await downloadFile(artifact.archive_download_url, downloadPath, config.githubToken);
 
     return { success: true, path: downloadPath };
   } catch (error) {
@@ -576,7 +815,6 @@ ipcMain.handle('create-release-with-asset', async (event, data) => {
   }
 
   try {
-    // Create release
     const { data: release } = await octokit.request('POST /repos/{owner}/{repo}/releases', {
       owner: data.owner,
       repo: data.repo,
@@ -587,7 +825,6 @@ ipcMain.handle('create-release-with-asset', async (event, data) => {
       prerelease: false
     });
 
-    // Upload asset if provided
     if (data.assetPath && fs.existsSync(data.assetPath)) {
       const fileContent = fs.readFileSync(data.assetPath);
       const fileName = path.basename(data.assetPath);
@@ -637,157 +874,7 @@ ipcMain.handle('list-releases', async (event, data) => {
   }
 });
 
-// Groq AI Chat
-ipcMain.handle('ai-chat', async (event, data) => {
-  if (!groqClient) {
-    const config = loadConfig();
-    if (config.groqApiKey) {
-      groqClient = new GroqClient(config.groqApiKey);
-    } else {
-      return { success: false, error: 'Groq API key no configurada', code: 'NO_GROQ_KEY' };
-    }
-  }
-
-  try {
-    const response = await groqClient.chat(
-      data.systemPrompt || getDefaultSystemPrompt(),
-      data.message
-    );
-    return { success: true, response };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('ai-chat-stream', async (event, data) => {
-  // For streaming responses
-  if (!groqClient) {
-    const config = loadConfig();
-    if (config.groqApiKey) {
-      groqClient = new GroqClient(config.groqApiKey);
-    } else {
-      return { success: false, error: 'Groq API key no configurada' };
-    }
-  }
-
-  // Return the response (streaming would require WebSocket or similar)
-  const result = await ipcMain.handle('ai-chat', null, data);
-  return result;
-});
-
-ipcMain.handle('ai-clear-history', async () => {
-  if (groqClient) {
-    groqClient.clearHistory();
-  }
-  return { success: true };
-});
-
-// File Selection
-ipcMain.handle('select-file', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile'],
-    filters: [
-      { name: 'All Files', extensions: ['*'] },
-      { name: 'Executables', extensions: ['exe', 'dll'] },
-      { name: 'Archives', extensions: ['zip', '7z'] }
-    ]
-  });
-  
-  if (!result.canceled && result.filePaths.length > 0) {
-    return { success: true, path: result.filePaths[0] };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('select-folder', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory']
-  });
-  
-  if (!result.canceled && result.filePaths.length > 0) {
-    return { success: true, path: result.filePaths[0] };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('save-file-dialog', async (event, data) => {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    defaultPath: data.defaultPath || 'project.zip',
-    filters: data.filters || [{ name: 'All Files', extensions: ['*'] }]
-  });
-  
-  if (!result.canceled) {
-    return { success: true, path: result.filePath };
-  }
-  return { success: false };
-});
-
-// Notifications
-ipcMain.handle('show-notification', async (event, data) => {
-  new Notification({
-    title: data.title || 'XPE Agent',
-    body: data.body || '',
-    icon: path.join(__dirname, 'assets', 'icon.png')
-  }).show();
-});
-
-// External links
-ipcMain.handle('open-external', async (event, url) => {
-  await shell.openExternal(url);
-  return { success: true };
-});
-
-// Helper Functions
-function getDefaultSystemPrompt() {
-  return `Eres XPE Agent, un asistente de desarrollo de IA avanzado. Tus responsabilidades son:
-
-1. **Generar Código de Calidad**: Escribe código limpio, documentado y funcional en C++, C#, Python, JavaScript, y otros lenguajes.
-
-2. **Incluir Archivos de Construcción**: SIEMPRE incluye los archivos necesarios para compilar el código:
-   - Para C++: CMakeLists.txt o Makefile
-   - Para C#: .csproj o solución de Visual Studio
-   - Para Python: requirements.txt
-
-3. **Flujo de Compilación**: Cuando el usuario pida una DLL o EXE:
-   - Genera el código fuente
-   - Sugiere un workflow de GitHub Actions para compilar
-   - Explica cómo usar el resultado
-
-4. **Formato de Respuesta**: 
-   - Explica brevemente lo que vas a crear
-   - Proporciona el código en bloques etiquetados por archivo
-   - Incluye instrucciones de compilación
-
-5. ** Comunicación Clara**: Responde en el idioma del usuario (español/inglés), sé conciso pero completo.`;
-}
-
-function downloadFile(url, dest, token) {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    
-    const options = {
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/octet-stream'
-      }
-    };
-
-    const protocol = url.startsWith('https') ? https : http;
-    
-    protocol.get(url, options, (response) => {
-      response.pipe(file);
-      file.on('finish', () => {
-        file.close();
-        resolve();
-      });
-    }).on('error', (err) => {
-      fs.unlink(dest, () => {});
-      reject(err);
-    });
-  });
-}
-
-// Export workflow templates
+// Workflow Templates
 ipcMain.handle('get-workflow-templates', async () => {
   return {
     success: true,
@@ -911,3 +998,113 @@ jobs:
     }
   };
 });
+
+// File Selection
+ipcMain.handle('select-file', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'All Files', extensions: ['*'] },
+      { name: 'Executables', extensions: ['exe', 'dll'] },
+      { name: 'Archives', extensions: ['zip', '7z'] }
+    ]
+  });
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return { success: true, path: result.filePaths[0] };
+  }
+  return { success: false };
+});
+
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return { success: true, path: result.filePaths[0] };
+  }
+  return { success: false };
+});
+
+// Notifications
+ipcMain.handle('show-notification', async (event, data) => {
+  new Notification({
+    title: data.title || 'XPE Agent',
+    body: data.body || '',
+    icon: path.join(__dirname, 'assets', 'icon.png')
+  }).show();
+});
+
+// External links
+ipcMain.handle('open-external', async (event, url) => {
+  await shell.openExternal(url);
+  return { success: true };
+});
+
+// Helper Functions
+function getDefaultSystemPrompt() {
+  return `Eres XPE Agent v3.0, un asistente de desarrollo de IA avanzado potenciado por MiniMax M2.
+
+Tus responsabilidades:
+
+1. **Generar Código de Calidad**: Escribe código limpio, documentado y funcional en C++, C#, Python, y otros lenguajes.
+
+2. **Incluir Archivos de Construcción**: SIEMPRE incluye los archivos necesarios para compilar:
+   - Para C++: CMakeLists.txt o Makefile
+   - Para C#: .csproj o solución de Visual Studio
+
+3. **Estructura DLL C++**:
+\`\`\`cpp
+// nombre_dll.cpp
+#include <windows.h>
+
+extern "C" __declspec(dllexport) void MiFuncion() {
+    // Tu código aquí
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+    switch (ul_reason_for_call) {
+        case DLL_PROCESS_ATTACH:
+        case DLL_THREAD_ATTACH:
+        case DLL_THREAD_DETACH:
+        case DLL_PROCESS_DETACH:
+            break;
+    }
+    return TRUE;
+}
+\`\`\`
+
+4. **Formato de Respuesta**: 
+   - Explica brevemente lo que vas a crear
+   - Proporciona código en bloques etiquetados
+   - Incluye instrucciones de compilación
+
+5. **Comunicación Clara**: Responde en español, sé conciso pero completo.`;
+}
+
+function downloadFile(url, dest, token) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    
+    const options = {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/octet-stream'
+      }
+    };
+
+    const protocol = url.startsWith('https') ? require('https') : require('http');
+    
+    protocol.get(url, options, (response) => {
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        resolve();
+      });
+    }).on('error', (err) => {
+      fs.unlink(dest, () => {});
+      reject(err);
+    });
+  });
+}

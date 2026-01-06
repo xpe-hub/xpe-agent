@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XPE Agent - AI Development Studio</title>
+  <title>XPE Agent v3.0 - AI Development Studio with MiniMax</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,9 +21,12 @@
       --accent-purple: #764ba2;
       --accent-green: #4ec9b0;
       --accent-orange: #ce9178;
+      --accent-cyan: #38bdf8;
       --warning: #cca700;
       --error: #f14c4c;
       --success: #89d185;
+      --minimax-color: #f97316;
+      --groq-color: #22c55e;
     }
     
     body {
@@ -34,7 +37,6 @@
       overflow: hidden;
     }
     
-    /* Main Layout */
     .app-container {
       display: flex;
       flex-direction: column;
@@ -43,8 +45,8 @@
     
     /* Header */
     .header {
-      height: 50px;
-      background: var(--bg-secondary);
+      height: 54px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
@@ -55,40 +57,88 @@
     .header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
     }
     
     .logo {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 18px;
+      font-weight: 700;
     }
     
     .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--minimax-color) 100%);
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 18px;
     }
     
     .logo-text span {
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--minimax-color) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     
+    .version-badge {
+      padding: 4px 10px;
+      background: linear-gradient(135deg, var(--minimax-color), var(--accent-purple));
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
     .header-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
     }
+    
+    .ai-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 14px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    
+    .provider-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .provider-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+    
+    .provider-dot.minimax { background: var(--minimax-color); box-shadow: 0 0 10px var(--minimax-color); }
+    .provider-dot.groq { background: var(--groq-color); box-shadow: 0 0 10px var(--groq-color); }
+    .provider-dot.cache { background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); }
+    .provider-dot.offline { background: var(--error); }
+    
+    .provider-name {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+    
+    .provider-name.minimax { color: var(--minimax-color); }
+    .provider-name.groq { color: var(--groq-color); }
+    .provider-name.cache { color: var(--accent-cyan); }
+    .provider-name.offline { color: var(--error); }
     
     .connection-status {
       display: flex;
@@ -110,14 +160,38 @@
     .status-dot.connected { background: var(--success); }
     .status-dot.warning { background: var(--warning); }
     
-    /* Main Content - Three Panes */
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg-tertiary);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    
+    /* Main Content */
     .main-content {
       flex: 1;
       display: flex;
       overflow: hidden;
     }
     
-    /* Left Pane - Chat (25%) */
+    /* Chat Pane */
     .chat-pane {
       width: 28%;
       background: var(--bg-secondary);
@@ -133,7 +207,19 @@
       font-size: 14px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+    }
+    
+    .ai-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(249, 115, 22, 0.2);
+      border: 1px solid var(--minimax-color);
+      border-radius: 20px;
+      font-size: 10px;
+      color: var(--minimax-color);
     }
     
     .chat-messages {
@@ -146,11 +232,11 @@
     }
     
     .message {
-      max-width: 90%;
-      padding: 12px 16px;
-      border-radius: 12px;
+      max-width: 92%;
+      padding: 14px 18px;
+      border-radius: 14px;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
     
     .message.user {
@@ -166,35 +252,60 @@
       border-bottom-left-radius: 4px;
     }
     
+    .message.cached {
+      border-color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.1);
+    }
+    
     .message-header {
       font-size: 11px;
       opacity: 0.7;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
     
-    .message-actions {
+    .message-meta {
       display: flex;
+      align-items: center;
       gap: 8px;
       margin-top: 8px;
     }
     
-    .message-action-btn {
-      padding: 4px 10px;
-      background: var(--bg-hover);
-      border: none;
+    .source-badge {
+      padding: 3px 8px;
       border-radius: 4px;
-      color: var(--text-secondary);
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
-    .message-action-btn:hover {
-      background: var(--accent-blue);
-      color: white;
+    .source-badge.api {
+      background: rgba(249, 115, 22, 0.2);
+      color: var(--minimax-color);
+    }
+    
+    .source-badge.cache {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-cyan);
+    }
+    
+    .provider-badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .provider-badge.minimax {
+      background: rgba(249, 115, 22, 0.2);
+      color: var(--minimax-color);
+    }
+    
+    .provider-badge.groq {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--groq-color);
     }
     
     .chat-input-area {
@@ -210,48 +321,63 @@
     
     .chat-input {
       flex: 1;
-      padding: 12px 16px;
+      padding: 14px 18px;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
-      border-radius: 10px;
+      border-radius: 12px;
       color: var(--text-primary);
       font-size: 13px;
       resize: none;
-      min-height: 44px;
+      min-height: 50px;
       max-height: 120px;
       font-family: inherit;
+      transition: border-color 0.2s;
     }
     
     .chat-input:focus {
       outline: none;
-      border-color: var(--accent-blue);
+      border-color: var(--minimax-color);
     }
     
     .chat-send-btn {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--minimax-color) 0%, var(--accent-purple) 100%);
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       color: white;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s;
+      transition: all 0.2s;
     }
     
     .chat-send-btn:hover {
       transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
     }
     
     .chat-send-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
     
-    /* Center Pane - Code Editor (44%) */
+    /* Resizer */
+    .resizer {
+      width: 4px;
+      cursor: col-resize;
+      background: transparent;
+      transition: background 0.2s;
+    }
+    
+    .resizer:hover {
+      background: var(--minimax-color);
+    }
+    
+    /* Editor Pane */
     .editor-pane {
       width: 44%;
       display: flex;
@@ -260,7 +386,7 @@
     }
     
     .editor-tabs {
-      height: 40px;
+      height: 42px;
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-color);
       display: flex;
@@ -281,12 +407,17 @@
       align-items: center;
       gap: 8px;
       white-space: nowrap;
+      transition: all 0.2s;
+    }
+    
+    .editor-tab:hover {
+      background: var(--bg-hover);
     }
     
     .editor-tab.active {
       background: var(--bg-primary);
       color: var(--text-primary);
-      border-top: 2px solid var(--accent-blue);
+      border-top: 2px solid var(--minimax-color);
     }
     
     .editor-tab .close-tab {
@@ -322,10 +453,10 @@
     
     .code-editor {
       flex: 1;
-      padding: 16px;
+      padding: 20px;
       font-family: 'Consolas', 'JetBrains Mono', monospace;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.7;
       background: var(--bg-primary);
       color: var(--text-primary);
       border: none;
@@ -340,7 +471,7 @@
     }
     
     .editor-toolbar {
-      height: 36px;
+      height: 40px;
       background: var(--bg-secondary);
       border-top: 1px solid var(--border-color);
       display: flex;
@@ -350,10 +481,10 @@
     }
     
     .toolbar-btn {
-      padding: 6px 12px;
+      padding: 8px 14px;
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 4px;
+      border-radius: 6px;
       color: var(--text-secondary);
       font-size: 12px;
       cursor: pointer;
@@ -369,12 +500,14 @@
     }
     
     .toolbar-btn.primary {
-      background: var(--accent-blue);
+      background: linear-gradient(135deg, var(--minimax-color), var(--accent-purple));
       color: white;
+      border: none;
     }
     
     .toolbar-btn.primary:hover {
-      background: #1177bb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
     }
     
     .toolbar-divider {
@@ -384,7 +517,7 @@
       margin: 0 4px;
     }
     
-    /* Right Pane - Project & Status (28%) */
+    /* Status Pane */
     .status-pane {
       width: 28%;
       background: var(--bg-secondary);
@@ -429,7 +562,7 @@
     }
     
     .form-group {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     
     .form-group label {
@@ -443,10 +576,10 @@
     
     .form-control {
       width: 100%;
-      padding: 10px 12px;
+      padding: 12px 14px;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: 8px;
       color: var(--text-primary);
       font-size: 13px;
       transition: border-color 0.2s;
@@ -454,20 +587,24 @@
     
     .form-control:focus {
       outline: none;
-      border-color: var(--accent-blue);
+      border-color: var(--minimax-color);
     }
     
     .form-control::placeholder {
       color: var(--text-muted);
     }
     
+    select.form-control {
+      cursor: pointer;
+    }
+    
     .btn {
-      padding: 10px 16px;
-      border-radius: 6px;
+      padding: 12px 18px;
+      border-radius: 8px;
       border: none;
       cursor: pointer;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       transition: all 0.2s;
       display: inline-flex;
       align-items: center;
@@ -476,13 +613,13 @@
     }
     
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      background: linear-gradient(135deg, var(--minimax-color) 0%, var(--accent-purple) 100%);
       color: white;
     }
     
     .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(14, 99, 156, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
     }
     
     .btn-primary:disabled {
@@ -514,7 +651,7 @@
     }
     
     .btn-sm {
-      padding: 6px 12px;
+      padding: 8px 14px;
       font-size: 12px;
     }
     
@@ -532,17 +669,17 @@
     }
     
     .progress-bar {
-      height: 6px;
+      height: 8px;
       background: var(--bg-tertiary);
-      border-radius: 3px;
+      border-radius: 4px;
       overflow: hidden;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-      border-radius: 3px;
+      background: linear-gradient(90deg, var(--minimax-color), var(--accent-purple));
+      border-radius: 4px;
       transition: width 0.3s;
     }
     
@@ -556,27 +693,29 @@
     .build-steps {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
     
     .build-step {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
+      gap: 12px;
+      padding: 12px 14px;
       background: var(--bg-tertiary);
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 12px;
+      transition: all 0.2s;
     }
     
     .build-step-icon {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 11px;
+      flex-shrink: 0;
     }
     
     .build-step-icon.pending {
@@ -605,20 +744,19 @@
       50% { opacity: 0.6; }
     }
     
-    /* Build Logs */
     .build-logs {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 14px;
       font-family: 'Consolas', monospace;
-      font-size: 12px;
+      font-size: 11px;
       background: #0d0d0d;
-      border-radius: 6px;
-      margin-top: 12px;
+      border-radius: 8px;
+      margin-top: 14px;
     }
     
     .log-line {
-      padding: 2px 0;
+      padding: 3px 0;
       border-bottom: 1px solid rgba(255,255,255,0.03);
     }
     
@@ -626,44 +764,50 @@
     .log-line.success { color: var(--success); }
     .log-line.error { color: var(--error); }
     .log-line.warning { color: var(--warning); }
+    .log-line.minimax { color: var(--minimax-color); }
     
-    /* Artifacts */
+    /* Artifact List */
     .artifact-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
     
     .artifact-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px;
+      padding: 14px;
       background: var(--bg-tertiary);
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px solid var(--border-color);
+      transition: all 0.2s;
+    }
+    
+    .artifact-item:hover {
+      border-color: var(--minimax-color);
     }
     
     .artifact-info {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
     
     .artifact-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--minimax-color), var(--accent-purple));
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 16px;
     }
     
     .artifact-name {
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
     }
     
     .artifact-size {
@@ -671,12 +815,12 @@
       color: var(--text-secondary);
     }
     
-    /* Action Buttons */
+    /* Action Grid */
     .action-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 12px;
+      margin-top: 14px;
     }
     
     /* Settings Modal */
@@ -686,11 +830,12 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.8);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      backdrop-filter: blur(4px);
     }
     
     .modal-overlay.active {
@@ -699,11 +844,11 @@
     
     .modal {
       background: var(--bg-secondary);
-      border-radius: 12px;
-      width: 500px;
+      border-radius: 16px;
+      width: 560px;
       max-width: 90%;
       border: 1px solid var(--border-color);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.6);
     }
     
     .modal-header {
@@ -715,19 +860,27 @@
     }
     
     .modal-title {
-      font-size: 18px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .modal-title i {
+      color: var(--minimax-color);
     }
     
     .modal-close {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       background: transparent;
       border: none;
       color: var(--text-secondary);
       cursor: pointer;
-      font-size: 18px;
+      font-size: 20px;
+      transition: all 0.2s;
     }
     
     .modal-close:hover {
@@ -738,12 +891,179 @@
       padding: 24px;
     }
     
+    .modal-section {
+      margin-bottom: 24px;
+    }
+    
+    .modal-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .section-title i {
+      color: var(--minimax-color);
+    }
+    
+    .api-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .api-item {
+      padding: 16px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s;
+    }
+    
+    .api-item.minimax {
+      border-color: var(--minimax-color);
+      background: rgba(249, 115, 22, 0.05);
+    }
+    
+    .api-item.groq {
+      border-color: var(--groq-color);
+      background: rgba(34, 197, 94, 0.05);
+    }
+    
+    .api-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .api-name {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .api-name.minimax { color: var(--minimax-color); }
+    .api-name.groq { color: var(--groq-color); }
+    
+    .api-status {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .api-status.configured {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--groq-color);
+    }
+    
+    .api-status.missing {
+      background: rgba(241, 76, 76, 0.2);
+      color: var(--error);
+    }
+    
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .toggle-label {
+      font-size: 13px;
+    }
+    
+    .toggle-label small {
+      display: block;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 26px;
+    }
+    
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-hover);
+      border-radius: 26px;
+      transition: 0.3s;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    
+    .toggle input:checked + .toggle-slider {
+      background: var(--minimax-color);
+    }
+    
+    .toggle input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+    
     .modal-footer {
       padding: 16px 24px;
       border-top: 1px solid var(--border-color);
       display: flex;
       justify-content: flex-end;
       gap: 12px;
+    }
+    
+    /* Empty States */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+      font-size: 40px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+    
+    .empty-state h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
     }
     
     /* Code Blocks */
@@ -774,29 +1094,6 @@
       white-space: pre;
     }
     
-    /* Empty States */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-secondary);
-    }
-    
-    .empty-state i {
-      font-size: 40px;
-      margin-bottom: 16px;
-      opacity: 0.3;
-    }
-    
-    .empty-state h3 {
-      font-size: 16px;
-      margin-bottom: 8px;
-      color: var(--text-primary);
-    }
-    
-    .empty-state p {
-      font-size: 13px;
-    }
-    
     /* Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -816,16 +1113,37 @@
     
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    /* Resizable Panes */
-    .resizer {
-      width: 4px;
-      cursor: col-resize;
-      background: transparent;
-      transition: background 0.2s;
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     
-    .resizer:hover {
-      background: var(--accent-blue);
+    .toast {
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      border-left: 4px solid var(--minimax-color);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+      max-width: 400px;
+    }
+    
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--error); }
+    .toast.warning { border-color: var(--warning); }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
   </style>
 </head>
@@ -838,15 +1156,27 @@
           <div class="logo-icon">🤖</div>
           <div class="logo-text">XPE <span>Agent</span></div>
         </div>
+        <span class="version-badge">v3.0 MINI</span>
       </div>
       <div class="header-right">
+        <div class="ai-status">
+          <div class="provider-indicator">
+            <div class="provider-dot" id="providerDot"></div>
+            <span class="provider-name" id="providerName">ESPERANDO</span>
+          </div>
+        </div>
         <div class="connection-status">
           <div class="status-dot" id="connectionDot"></div>
           <span id="connectionText">Desconectado</span>
         </div>
-        <button class="toolbar-btn" onclick="openSettings()" title="Configuración">
-          <i class="fas fa-cog"></i>
-        </button>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="clearCache()" title="Limpiar Cache">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+          <button class="icon-btn" onclick="openSettings()" title="Configuración">
+            <i class="fas fa-cog"></i>
+          </button>
+        </div>
       </div>
     </header>
     
@@ -855,37 +1185,39 @@
       <!-- Left Pane - Chat -->
       <aside class="chat-pane">
         <div class="chat-header">
-          <i class="fas fa-comments"></i>
-          Chat AI
-          <span style="margin-left: auto; font-size: 11px; color: var(--accent-green);">
-            <i class="fas fa-circle" style="font-size: 6px;"></i> Groq Powered
+          <span><i class="fas fa-robot"></i> Chat AI</span>
+          <span class="ai-badge">
+            <i class="fas fa-bolt"></i> MiniMax Powered
           </span>
         </div>
         
         <div class="chat-messages" id="chatMessages">
           <div class="message assistant">
             <div class="message-header">
-              <i class="fas fa-robot"></i> XPE Agent
+              <i class="fas fa-robot"></i> XPE Agent v3.0
             </div>
-            ¡Hola! Soy XPE Agent, tu asistente de desarrollo con IA. Puedo:
+            ¡Hola! Soy XPE Agent v3.0 con MiniMax M2. Puedo:
             <br><br>
-            • <strong>Crear DLLs y EXEs</strong> que tú necesites
-            • <strong>Generar código</strong> en C++, C#, Python y más
+            • <strong>Crear DLLs y EXEs</strong> que necesites
+            • <strong>Generar código</strong> en C++, C#, Python
             • <strong>Compilar</strong> usando GitHub Actions
-            • <strong>Gestionar repositorios</strong> en GitHub
+            • Usar <strong>cache local</strong> para respuestas rápidas
+            • <strong>Fall back</strong> automático entre proveedores
             <br><br>
-            Ejemplos de pedidos:
-            <br>• "Crea una DLL para加密 archivos"
+            <em>Models: MiniMax M2 (Primary) • MiniMax M2-Stable • Groq (Fallback)</em>
+            <br><br>
+            Ejemplos:
+            <br>• "Crea una DLL para encryptar archivos"
             <br>• "Haz un exe que muestre alertas"
-            <br>• "Genera una librería para manipulación de imágenes"
+            <br>• "Genera una librería para imágenes"
             <br><br>
-            ¿Qué necesitas hoy?
+            ¿Qué necesitas?
           </div>
         </div>
         
         <div class="chat-input-area">
           <div class="chat-input-wrapper">
-            <textarea class="chat-input" id="chatInput" placeholder="Describe lo que necesitas... Ej: 'Crea una DLL para...'"></textarea>
+            <textarea class="chat-input" id="chatInput" placeholder="Describe lo que necesitas... (Ej: 'Crea una DLL para...')"></textarea>
             <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">
               <i class="fas fa-paper-plane"></i>
             </button>
@@ -896,7 +1228,7 @@
       <!-- Resizer -->
       <div class="resizer" id="resizer1"></div>
       
-      <!-- Center Pane - Code Editor -->
+      <!-- Center Pane - Editor -->
       <main class="editor-pane">
         <div class="editor-tabs" id="editorTabs">
           <div class="editor-tab active" data-file="main">
@@ -910,10 +1242,13 @@
         </div>
         
         <textarea class="code-editor" id="codeEditor" placeholder="// Tu código aparecerá aquí...
-// Cuando la IA genere código, podrás verlo y editarlo aquí.
+// La IA generará código C++/C# profesional y funcional.
 
-// Ejemplo de estructura:
 #include &lt;windows.h&gt;
+
+extern "C" __declspec(dllexport) void MiFuncion() {
+    // Tu código aquí...
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
@@ -928,17 +1263,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         
         <div class="editor-toolbar">
           <button class="toolbar-btn primary" onclick="compileProject('dll')">
-            <i class="fas fa-cogs"></i> Compilar DLL
+            <i class="fas fa-cogs"></i> DLL
           </button>
           <button class="toolbar-btn primary" onclick="compileProject('exe')">
-            <i class="fas fa-play"></i> Compilar EXE
+            <i class="fas fa-play"></i> EXE
           </button>
           <div class="toolbar-divider"></div>
           <button class="toolbar-btn" onclick="saveCode()">
-            <i class="fas fa-save"></i> Guardar
+            <i class="fas fa-save"></i>
           </button>
           <button class="toolbar-btn" onclick="copyCode()">
-            <i class="fas fa-copy"></i> Copiar
+            <i class="fas fa-copy"></i>
           </button>
         </div>
       </main>
@@ -946,9 +1281,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       <!-- Resizer -->
       <div class="resizer" id="resizer2"></div>
       
-      <!-- Right Pane - Project & Status -->
+      <!-- Right Pane - Status -->
       <aside class="status-pane">
-        <!-- Project Settings -->
+        <!-- Project -->
         <div class="status-section">
           <div class="status-header" onclick="toggleSection(this)">
             <span><i class="fas fa-folder"></i> Proyecto</span>
@@ -964,7 +1299,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
               <input type="text" id="repo" class="form-control" placeholder="mi-proyecto">
             </div>
             <div class="form-group">
-              <label>Tipo de Build</label>
+              <label>Tipo</label>
               <select id="buildType" class="form-control">
                 <option value="cpp-dll">C++ DLL</option>
                 <option value="cpp-exe">C++ EXE</option>
@@ -972,7 +1307,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
               </select>
             </div>
             <button class="btn btn-primary btn-block" onclick="createOrUpdateProject()">
-              <i class="fas fa-sync"></i> Crear/Actualizar Proyecto
+              <i class="fas fa-sync"></i> Compilar
             </button>
           </div>
         </div>
@@ -980,7 +1315,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         <!-- Build Status -->
         <div class="status-section">
           <div class="status-header" onclick="toggleSection(this)">
-            <span><i class="fas fa-rocket"></i> Estado de Build</span>
+            <span><i class="fas fa-rocket"></i> Build Status</span>
             <i class="fas fa-chevron-down"></i>
           </div>
           <div class="status-content build-status">
@@ -996,37 +1331,29 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             
             <div class="build-steps" id="buildSteps">
               <div class="build-step">
-                <div class="build-step-icon pending" id="step1Icon">
-                  <i class="fas fa-clock"></i>
-                </div>
+                <div class="build-step-icon pending" id="step1Icon"><i class="fas fa-clock"></i></div>
                 <span id="step1Text">Esperando...</span>
               </div>
               <div class="build-step">
-                <div class="build-step-icon pending" id="step2Icon">
-                  <i class="fas fa-clock"></i>
-                </div>
+                <div class="build-step-icon pending" id="step2Icon"><i class="fas fa-clock"></i></div>
                 <span id="step2Text">Esperando...</span>
               </div>
               <div class="build-step">
-                <div class="build-step-icon pending" id="step3Icon">
-                  <i class="fas fa-clock"></i>
-                </div>
+                <div class="build-step-icon pending" id="step3Icon"><i class="fas fa-clock"></i></div>
                 <span id="step3Text">Esperando...</span>
               </div>
               <div class="build-step">
-                <div class="build-step-icon pending" id="step4Icon">
-                  <i class="fas fa-clock"></i>
-                </div>
+                <div class="build-step-icon pending" id="step4Icon"><i class="fas fa-clock"></i></div>
                 <span id="step4Text">Esperando...</span>
               </div>
             </div>
             
             <div class="build-logs" id="buildLogs">
-              <div class="log-line info">Logs del build aparecerán aquí...</div>
+              <div class="log-line info">Logs aparecerán aquí...</div>
             </div>
             
             <div class="action-grid">
-              <button class="btn btn-secondary btn-sm" onclick="refreshBuildStatus()" id="refreshBtn">
+              <button class="btn btn-secondary btn-sm" onclick="refreshBuildStatus()">
                 <i class="fas fa-sync-alt"></i> Actualizar
               </button>
               <button class="btn btn-success btn-sm" onclick="downloadAndRelease()" id="downloadBtn" disabled>
@@ -1047,7 +1374,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
               <div class="empty-state">
                 <i class="fas fa-box-open"></i>
                 <h3>Sin artefactos</h3>
-                <p>Los archivos compilados aparecerán aquí</p>
+                <p>Archivos compilados aparecerán aquí</p>
               </div>
             </div>
           </div>
@@ -1056,37 +1383,109 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     </div>
   </div>
   
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+  
   <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">Configuración</div>
+        <div class="modal-title">
+          <i class="fas fa-cog"></i> Configuración v3.0
+        </div>
         <button class="modal-close" onclick="closeSettings()">×</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>GitHub Token</label>
-          <input type="password" id="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
-          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
-            Token con permisos de repo y workflow
-          </p>
+        <!-- APIs Section -->
+        <div class="modal-section">
+          <div class="section-title">
+            <i class="fas fa-brain"></i> Proveedores de IA
+          </div>
+          <div class="api-config">
+            <!-- MiniMax API -->
+            <div class="api-item minimax">
+              <div class="api-header">
+                <span class="api-name minimax">
+                  <i class="fas fa-bolt"></i> MiniMax API (M2 / M2-Stable)
+                </span>
+                <span class="api-status" id="minimaxStatus">NO CONFIGURADO</span>
+              </div>
+              <input type="password" id="minimaxApiKey" class="form-control" placeholder="sk_xxxxxxxxxxxx">
+            </div>
+            
+            <!-- Groq API -->
+            <div class="api-item groq">
+              <div class="api-header">
+                <span class="api-name groq">
+                  <i class="fas fa-bolt"></i> Groq API (Fallback)
+                </span>
+                <span class="api-status" id="groqStatus">NO CONFIGURADO</span>
+              </div>
+              <input type="password" id="groqApiKey" class="form-control" placeholder="gsk_xxxxxxxxxxxx">
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Groq API Key</label>
-          <input type="password" id="groqApiKey" class="form-control" placeholder="gsk_xxxxxxxxxxxx">
-          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
-            Para capacidades de IA (groq.com)
-          </p>
+        
+        <!-- GitHub Token -->
+        <div class="modal-section">
+          <div class="section-title">
+            <i class="fab fa-github"></i> GitHub
+          </div>
+          <div class="form-group">
+            <label>Personal Access Token</label>
+            <input type="password" id="githubToken" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
+            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
+              <i class="fas fa-info-circle"></i> Requiere permisos: repo, workflow, delete:packages
+            </p>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Directorio de Trabajo</label>
-          <input type="text" id="workDir" class="form-control" placeholder="/home/usuario/Descargas">
+        
+        <!-- Preferences -->
+        <div class="modal-section">
+          <div class="section-title">
+            <i class="fas fa-sliders-h"></i> Preferencias
+          </div>
+          
+          <div class="toggle-group">
+            <div class="toggle-label">
+              <span>Auto-Fallback</span>
+              <small>Usar Groq si MiniMax falla</small>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="autoFallback" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div class="toggle-group">
+            <div class="toggle-label">
+              <span>Cache Local</span>
+              <small>Guardar respuestas para consultas similares</small>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="cacheEnabled" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div class="form-group" style="margin-top: 14px;">
+            <label>Proveedor Preferido</label>
+            <select id="preferredProvider" class="form-control">
+              <option value="minimax">MiniMax (M2) - Más Avanzado</option>
+              <option value="groq">Groq - Más Rápido</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Directorio de Trabajo</label>
+            <input type="text" id="workDir" class="form-control" placeholder="/home/usuario/Descargas">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeSettings()">Cancelar</button>
         <button class="btn btn-primary" onclick="saveSettings()">
-          <i class="fas fa-save"></i> Guardar
+          <i class="fas fa-save"></i> Guardar Configuración
         </button>
       </div>
     </div>
@@ -1097,32 +1496,88 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     let currentFiles = { 'main.cpp': '' };
     let activeFile = 'main.cpp';
     let isBuilding = false;
-    let buildStatus = null;
     let currentRunId = null;
+    let aiStatus = null;
     
     // Initialize
     async function init() {
-      log('Inicializando XPE Agent...', 'info');
+      log('Inicializando XPE Agent v3.0...', 'info');
       
       const config = await window.api.getConfig();
+      updateAIStatusDisplay(config);
+      
       if (config.githubToken) {
         document.getElementById('githubToken').value = config.githubToken;
         await checkGitHubConnection(config.githubToken);
       }
+      if (config.minimaxApiKey) {
+        document.getElementById('minimaxApiKey').value = config.minimaxApiKey;
+        document.getElementById('minimaxStatus').textContent = 'CONFIGURADO';
+        document.getElementById('minimaxStatus').className = 'api-status configured';
+      }
       if (config.groqApiKey) {
         document.getElementById('groqApiKey').value = config.groqApiKey;
+        document.getElementById('groqStatus').textContent = 'CONFIGURADO';
+        document.getElementById('groqStatus').className = 'api-status configured';
       }
-      if (config.defaultOwner) {
-        document.getElementById('owner').value = config.defaultOwner;
+      if (config.autoFallback !== undefined) {
+        document.getElementById('autoFallback').checked = config.autoFallback;
+      }
+      if (config.cacheEnabled !== undefined) {
+        document.getElementById('cacheEnabled').checked = config.cacheEnabled;
+      }
+      if (config.preferredProvider) {
+        document.getElementById('preferredProvider').value = config.preferredProvider;
       }
       if (config.workDir) {
         document.getElementById('workDir').value = config.workDir;
       }
+      if (config.defaultOwner) {
+        document.getElementById('owner').value = config.defaultOwner;
+      }
       
-      // Check for saved project
-      if (config.lastRepo) {
-        document.getElementById('owner').value = config.lastRepo.owner;
-        document.getElementById('repo').value = config.lastRepo.name;
+      // Check AI status
+      const statusResult = await window.api.aiGetStatus();
+      if (statusResult.success) {
+        aiStatus = statusResult;
+        updateProviderIndicator(statusResult);
+      }
+    }
+    
+    // AI Status Functions
+    function updateAIStatusDisplay(config) {
+      const providerDot = document.getElementById('providerDot');
+      const providerName = document.getElementById('providerName');
+      
+      if (config.minimaxApiKey) {
+        providerDot.className = 'provider-dot minimax';
+        providerName.className = 'provider-name minimax';
+        providerName.textContent = 'MINIMAX';
+      } else if (config.groqApiKey) {
+        providerDot.className = 'provider-dot groq';
+        providerName.className = 'provider-name groq';
+        providerName.textContent = 'GROQ';
+      } else {
+        providerDot.className = 'provider-dot offline';
+        providerName.className = 'provider-name offline';
+        providerName.textContent = 'OFFLINE';
+      }
+    }
+    
+    function updateProviderIndicator(status) {
+      const providerDot = document.getElementById('providerDot');
+      const providerName = document.getElementById('providerName');
+      
+      if (status.providers && status.providers.length > 0) {
+        if (status.providers[0].includes('minimax')) {
+          providerDot.className = 'provider-dot minimax';
+          providerName.className = 'provider-name minimax';
+          providerName.textContent = 'MINIMAX';
+        } else {
+          providerDot.className = 'provider-dot groq';
+          providerName.className = 'provider-name groq';
+          providerName.textContent = 'GROQ';
+        }
       }
     }
     
@@ -1131,15 +1586,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       const result = await window.api.getUserInfo();
       if (result.success) {
         updateConnectionStatus(true, result.name || result.login);
-        log(`Conectado a GitHub: ${result.name || result.login}`, 'success');
         return true;
-      } else {
-        updateConnectionStatus(false);
-        if (result.code !== 'NO_TOKEN') {
-          log(`Error de GitHub: ${result.error}`, 'error');
-        }
-        return false;
       }
+      updateConnectionStatus(false);
+      return false;
     }
     
     function updateConnectionStatus(connected, username) {
@@ -1157,11 +1607,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       const message = chatInput.value.trim();
       if (!message) return;
       
-      // Add user message
       addMessage(message, 'user');
       chatInput.value = '';
       
-      // Show loading
       const loadingId = addLoadingMessage();
       
       try {
@@ -1173,28 +1621,27 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         removeMessage(loadingId);
         
         if (response.success) {
-          addMessage(response.response, 'assistant');
+          addMessage(response.response, 'assistant', response.source, response.provider);
           parseAndDisplayCode(response.response);
-          log('Respuesta de IA recibida', 'success');
-        } else {
-          if (response.code === 'NO_GROQ_KEY') {
-            addMessage('Por favor, configura tu Groq API Key en la configuración para usar las capacidades de IA.', 'assistant');
-            log('Groq API no configurada', 'warning');
-          } else {
-            addMessage(`Error: ${response.error}`, 'assistant');
-            log(`Error de IA: ${response.error}`, 'error');
+          showToast('Respuesta generada', 'success');
+          
+          if (response.provider) {
+            updateProviderFromResponse(response.provider);
           }
+        } else {
+          addMessage(`Error: ${response.error}`, 'assistant');
+          showToast(`Error: ${response.error}`, 'error');
         }
       } catch (error) {
         removeMessage(loadingId);
-        addMessage(`Error de conexión: ${error.message}`, 'assistant');
-        log(`Error: ${error.message}`, 'error');
+        addMessage(`Error: ${error.message}`, 'assistant');
+        showToast(`Error: ${error.message}`, 'error');
       }
     }
     
-    function addMessage(content, type) {
+    function addMessage(content, type, source = 'api', provider = null) {
       const div = document.createElement('div');
-      div.className = `message ${type}`;
+      div.className = `message ${type}${source === 'cache' ? ' cached' : ''}`;
       
       let html = `<div class="message-header">`;
       if (type === 'assistant') {
@@ -1204,6 +1651,19 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       }
       html += `</div>`;
       html += content;
+      
+      if (type === 'assistant') {
+        html += `<div class="message-meta">`;
+        if (source === 'cache') {
+          html += `<span class="source-badge cache"><i class="fas fa-database"></i> CACHE</span>`;
+        } else {
+          html += `<span class="source-badge api"><i class="fas fa-bolt"></i> API</span>`;
+        }
+        if (provider) {
+          html += `<span class="provider-badge ${provider.includes('minimax') ? 'minimax' : 'groq'}">${provider.toUpperCase()}</span>`;
+        }
+        html += `</div>`;
+      }
       
       div.innerHTML = html;
       chatMessages.appendChild(div);
@@ -1217,7 +1677,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       div.className = 'message assistant loading';
       div.innerHTML = `
         <div class="message-header"><i class="fas fa-robot"></i> XPE Agent</div>
-        <span class="spinner"></span> Procesando...
+        <span class="spinner"></span> Procesando con MiniMax M2...
       `;
       chatMessages.appendChild(div);
       chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -1230,8 +1690,24 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       }
     }
     
+    function updateProviderFromResponse(provider) {
+      const providerDot = document.getElementById('providerDot');
+      const providerName = document.getElementById('providerName');
+      
+      if (provider.includes('minimax')) {
+        providerDot.className = 'provider-dot minimax';
+        providerName.className = 'provider-name minimax';
+        providerName.textContent = 'MINIMAX';
+        log('Respuesta de MiniMax', 'minimax');
+      } else {
+        providerDot.className = 'provider-dot groq';
+        providerName.className = 'provider-name groq';
+        providerName.textContent = 'GROQ';
+        log('Respuesta de Groq (fallback)', 'info');
+      }
+    }
+    
     function parseAndDisplayCode(response) {
-      // Extract code blocks
       const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
       const matches = [...response.matchAll(codeBlockRegex)];
       
@@ -1239,14 +1715,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         let fileIndex = 1;
         currentFiles = {};
         
-        matches.forEach((match, index) => {
+        matches.forEach((match) => {
           const language = match[1] || 'txt';
           const code = match[2].trim();
           
           const ext = getFileExtension(language);
           const filename = fileIndex === 1 && matches.length === 1 ? 
-            `main${ext}` : 
-            `file${fileIndex}${ext}`;
+            `main${ext}` : `file${fileIndex}${ext}`;
           
           currentFiles[filename] = code;
           
@@ -1258,7 +1733,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
           fileIndex++;
         });
         
-        log(`Extraídos ${matches.length} archivos de código`, 'success');
+        log(`Generados ${matches.length} archivos`, 'success');
       }
     }
     
@@ -1267,9 +1742,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         'cpp': '.cpp', 'c++': '.cpp', 'c': '.c',
         'csharp': '.cs', 'cs': '.cs', 'c#': '.cs',
         'python': '.py', 'py': '.py',
-        'javascript': '.js', 'js': '.js',
-        'typescript': '.ts', 'ts': '.ts',
-        'java': '.java',
         'cmake': 'CMakeLists.txt',
         'yaml': '.yml', 'yml': '.yml'
       };
@@ -1287,18 +1759,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     
     function saveCode() {
       currentFiles[activeFile] = getEditorContent();
-      log(`Guardado: ${activeFile}`, 'success');
+      showToast('Código guardado', 'success');
     }
     
     function copyCode() {
       const code = getEditorContent();
       navigator.clipboard.writeText(code);
-      log('Código copiado al portapapeles', 'success');
+      showToast('Copiado al portapapeles', 'success');
     }
     
     function updateTab(filename) {
-      const tabs = document.querySelectorAll('.editor-tab:not(.add-tab)');
-      tabs.forEach(tab => {
+      document.querySelectorAll('.editor-tab').forEach(tab => {
         if (tab.dataset.file === filename || tab.querySelector('span').textContent === filename) {
           tab.classList.add('active');
         } else {
@@ -1314,15 +1785,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         const tab = document.createElement('div');
         tab.className = 'editor-tab';
         tab.dataset.file = filename;
-        tab.innerHTML = `
-          <i class="fas fa-file-code"></i>
-          <span>${filename}</span>
-          <span class="close-tab" onclick="closeTab(event, this)">×</span>
-        `;
+        tab.innerHTML = `<i class="fas fa-file-code"></i><span>${filename}</span><span class="close-tab" onclick="closeTab(event, this)">×</span>`;
         tab.onclick = () => switchToTab(tab);
-        
-        const addBtn = document.querySelector('.add-tab');
-        addBtn.before(tab);
+        document.querySelector('.add-tab').before(tab);
         switchToTab(tab);
       }
     }
@@ -1334,7 +1799,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       setEditorContent(currentFiles[activeFile] || '');
     }
     
-    function closeTab(btn, element) {
+    function closeTab(event, element) {
       event.stopPropagation();
       const tab = element.parentElement;
       tab.remove();
@@ -1354,51 +1819,33 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         return;
       }
       
-      log(`Creando/actualizando proyecto ${owner}/${repo}...`, 'info');
+      log(`Iniciando compilación en ${owner}/${repo}...`, 'info');
       
-      // Create repository if needed
-      const createResult = await window.api.createRepo({
-        name: repo,
-        description: 'Proyecto creado por XPE Agent',
-        private: true
-      });
-      
+      // Create repo if needed
+      const createResult = await window.api.createRepo({ name: repo, private: true });
       if (createResult.success) {
         log(`Repositorio ${createResult.repo.full_name} listo`, 'success');
       }
       
-      // Get templates
+      // Get template and upload files
       const templatesResult = await window.api.getWorkflowTemplates();
       const buildType = document.getElementById('buildType').value;
       const template = templatesResult.templates[buildType];
       
-      // Upload code files
+      currentFiles[activeFile] = getEditorContent();
+      
       const files = Object.entries(currentFiles).map(([name, content]) => ({
         path: name,
         content: content,
-        message: `Add ${name}`
+        message: `Update code for ${buildType}`
       }));
       
-      if (files.length > 0) {
-        const filesResult = await window.api.createMultipleFiles({
-          owner,
-          repo,
-          files: files
-        });
-        
-        if (filesResult.success) {
-          log(`${filesResult.results.length} archivos subidos`, 'success');
-        }
-      }
+      await window.api.createMultipleFiles({ owner, repo, files });
       
       // Trigger build
-      const workflowResult = await window.api.triggerWorkflow({
-        owner,
-        repo,
-        workflow: template.content
-      });
+      const result = await window.api.triggerWorkflow({ owner, repo, workflow: template.content });
       
-      if (workflowResult.success) {
+      if (result.success) {
         log('Build iniciado en GitHub Actions', 'success');
         startBuildPolling(owner, repo);
       }
@@ -1413,36 +1860,24 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         return;
       }
       
-      if (!currentFiles[activeFile]) {
-        log('Error: No hay código para compilar', 'error');
-        return;
-      }
-      
-      log(`Iniciando compilación ${type.toUpperCase()}...`, 'info');
+      log(`Compilando ${type.toUpperCase()}...`, 'info');
       isBuilding = true;
       
-      // Save current code
       currentFiles[activeFile] = getEditorContent();
       
-      // Create/update files
       const files = Object.entries(currentFiles).map(([name, content]) => ({
         path: name,
         content: content,
-        message: `Update code for ${type.toUpperCase()} build`
+        message: `Build ${type.toUpperCase()}`
       }));
       
       await window.api.createMultipleFiles({ owner, repo, files });
       
-      // Get template and trigger build
       const templatesResult = await window.api.getWorkflowTemplates();
       const templateKey = type === 'dll' ? 'cpp-dll' : 'cpp-exe';
       const template = templatesResult.templates[templateKey];
       
-      const result = await window.api.triggerWorkflow({
-        owner,
-        repo,
-        workflow: template.content
-      });
+      const result = await window.api.triggerWorkflow({ owner, repo, workflow: template.content });
       
       if (result.success) {
         startBuildPolling(owner, repo);
@@ -1450,19 +1885,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     }
     
     async function startBuildPolling(owner, repo) {
-      updateBuildStep(1, 'running', 'Iniciando build en GitHub...');
+      updateBuildStep(1, 'running', 'Iniciando build...');
       updateProgress(10);
       
-      // Wait a moment for workflow to start
       await sleep(3000);
       
-      // Get latest workflow run
       const runsResult = await window.api.getWorkflowRuns({ owner, repo });
       
       if (runsResult.success && runsResult.runs.length > 0) {
         currentRunId = runsResult.runs[0].id;
         updateBuildStep(1, 'success', 'Build iniciado');
-        updateBuildStep(2, 'running', 'Compilando código...');
+        updateBuildStep(2, 'running', 'Compilando...');
         updateProgress(30);
         
         pollBuildStatus(owner, repo);
@@ -1472,45 +1905,29 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     async function pollBuildStatus(owner, repo) {
       if (!currentRunId || !isBuilding) return;
       
-      const statusResult = await window.api.getWorkflowRunStatus({
-        owner,
-        repo,
-        runId: currentRunId
-      });
+      const statusResult = await window.api.getWorkflowRunStatus({ owner, repo, runId: currentRunId });
       
       if (statusResult.success) {
-        const status = statusResult.status;
-        const conclusion = statusResult.conclusion;
-        
-        if (status === 'in_progress') {
-          updateBuildStep(2, 'running', 'Compilando...');
+        if (statusResult.status === 'in_progress') {
           updateProgress(50);
-          log('Build en progreso...', 'info');
-          
-          // Continue polling
+          log('Compilando...', 'info');
           setTimeout(() => pollBuildStatus(owner, repo), 5000);
-        } else if (status === 'completed') {
-          if (conclusion === 'success') {
-            updateBuildStep(2, 'success', 'Compilación exitosa');
+        } else if (statusResult.status === 'completed') {
+          if (statusResult.conclusion === 'success') {
+            updateBuildStep(2, 'success', 'Compilado');
             updateBuildStep(3, 'running', 'Generando artefacto...');
             updateProgress(70);
-            log('Build completado', 'success');
             
-            // Get artifacts
             await checkArtifacts(owner, repo);
             
-            updateBuildStep(3, 'success', 'Artegacto listo');
-            updateBuildStep(4, 'success', '¡Listo!');
+            updateBuildStep(3, 'success', 'Listo');
+            updateBuildStep(4, 'success', '¡Completado!');
             updateProgress(100);
             document.getElementById('downloadBtn').disabled = false;
             
-            // Notify
-            await window.api.showNotification({
-              title: 'XPE Agent',
-              body: '¡Tu DLL/EXE está listo para descargar!'
-            });
+            showToast('¡Compilación exitosa!', 'success');
           } else {
-            updateBuildStep(2, 'error', 'Error de compilación');
+            updateBuildStep(2, 'error', 'Error');
             updateProgress(0);
             log('Build fallido', 'error');
           }
@@ -1528,9 +1945,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         artifactList.innerHTML = result.artifacts.map(a => `
           <div class="artifact-item">
             <div class="artifact-info">
-              <div class="artifact-icon">
-                <i class="fas fa-file-binary"></i>
-              </div>
+              <div class="artifact-icon"><i class="fas fa-file-binary"></i></div>
               <div>
                 <div class="artifact-name">${a.name}</div>
                 <div class="artifact-size">${formatSize(a.size)}</div>
@@ -1550,28 +1965,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       
       log('Descargando artefacto...', 'info');
       
-      const result = await window.api.downloadArtifact({
-        owner,
-        repo,
-        artifactId: artifactId,
-        token: (await window.api.getConfig()).githubToken
-      });
+      const result = await window.api.downloadArtifact({ owner, repo, artifactId });
       
       if (result.success) {
-        log(`Artefacto descargado: ${result.path}`, 'success');
+        log(`Artefacto: ${result.path}`, 'success');
         
-        // Create release
         const releaseResult = await window.api.createReleaseWithAsset({
-          owner,
-          repo,
-          tag: `v${Date.now()}`,
-          name: `Build ${Date.now()}`,
-          body: 'Artefacto generado por XPE Agent',
-          assetPath: result.path
+          owner, repo, tag: `v${Date.now()}`, name: `Build ${Date.now()}`,
+          body: 'Generado por XPE Agent v3.0', assetPath: result.path
         });
         
         if (releaseResult.success) {
-          log(`Release creada: ${releaseResult.url}`, 'success');
+          log(`Release: ${releaseResult.url}`, 'success');
         }
       }
     }
@@ -1586,15 +1991,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       }
     }
     
-    async function refreshBuildStatus() {
-      if (currentRunId) {
-        const owner = document.getElementById('owner').value.trim();
-        const repo = document.getElementById('repo').value.trim();
-        await pollBuildStatus(owner, repo);
-      }
-    }
-    
-    // Build UI Updates
+    // Build UI
     function updateBuildStep(step, status, text) {
       const icon = document.getElementById(`step${step}Icon`);
       const textEl = document.getElementById(`step${step}Text`);
@@ -1611,10 +2008,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     function updateProgress(percent) {
       document.getElementById('progressFill').style.width = percent + '%';
       document.getElementById('progressPercent').textContent = percent + '%';
-    }
-    
-    function updateBuildStatusText(text) {
-      document.getElementById('progressStatus').textContent = text;
     }
     
     function addLog(message, type = 'info') {
@@ -1642,19 +2035,49 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     async function saveSettings() {
       const config = {
         githubToken: document.getElementById('githubToken').value.trim(),
+        minimaxApiKey: document.getElementById('minimaxApiKey').value.trim(),
         groqApiKey: document.getElementById('groqApiKey').value.trim(),
         workDir: document.getElementById('workDir').value.trim(),
-        defaultOwner: document.getElementById('owner').value.trim()
+        defaultOwner: document.getElementById('owner').value.trim(),
+        autoFallback: document.getElementById('autoFallback').checked,
+        cacheEnabled: document.getElementById('cacheEnabled').checked,
+        preferredProvider: document.getElementById('preferredProvider').value
       };
       
       await window.api.saveConfig(config);
+      
+      // Update status display
+      updateAIStatusDisplay(config);
       
       if (config.githubToken) {
         await checkGitHubConnection(config.githubToken);
       }
       
-      log('Configuración guardada', 'success');
+      // Update API statuses in modal
+      if (config.minimaxApiKey) {
+        document.getElementById('minimaxStatus').textContent = 'CONFIGURADO';
+        document.getElementById('minimaxStatus').className = 'api-status configured';
+      } else {
+        document.getElementById('minimaxStatus').textContent = 'NO CONFIGURADO';
+        document.getElementById('minimaxStatus').className = 'api-status missing';
+      }
+      
+      if (config.groqApiKey) {
+        document.getElementById('groqStatus').textContent = 'CONFIGURADO';
+        document.getElementById('groqStatus').className = 'api-status configured';
+      } else {
+        document.getElementById('groqStatus').textContent = 'NO CONFIGURADO';
+        document.getElementById('groqStatus').className = 'api-status missing';
+      }
+      
+      showToast('Configuración guardada', 'success');
       closeSettings();
+    }
+    
+    async function clearCache() {
+      await window.api.aiClearCache();
+      showToast('Cache limpiado', 'success');
+      log('Cache local limpiado', 'info');
     }
     
     // UI Helpers
@@ -1673,34 +2096,36 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
       return new Promise(resolve => setTimeout(resolve, ms));
     }
     
-    // Chat Input Enter key
-    chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
     
-    // System Prompt for Code Generation
+    // System Prompt
     function getCodeGenerationSystemPrompt() {
-      return `Eres XPE Agent, un experto en desarrollo de software. Tu especialidad es crear DLLs y EXEs para Windows.
+      return `Eres XPE Agent v3.0, un experto en desarrollo potenciado por MiniMax M2.
 
-INSTRUCCIONES:
-1. Cuando el usuario pida una DLL, genera código C++ con la estructura correcta para un DLL de Windows
-2. Cuando pida un EXE, genera código C++/C# para una aplicación de consola o GUI
-3. SIEMPRE incluye el código completo y funcional
-4. El código debe compilar sin errores
-5. Responde principalmente en español, pero el código en inglés
+Tus responsabilidades:
+1. Generar código C++/C# profesional y funcional
+2. Incluir archivos de construcción (CMakeLists.txt, .csproj)
+3. Estructura DLL correcta con DllMain
+4. Responder en español con código en inglés
 
-ESTRUCTURA DLL C++:
-\`\`\`cpp
-// nombre_dll.cpp
+Ejemplo DLL:
+\\\`\\\`\\\`cpp
 #include <windows.h>
 
-// Tu código aquí...
-
 extern "C" __declspec(dllexport) void MiFuncion() {
-    // Implementación
+    // Tu código
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
@@ -1713,44 +2138,33 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     }
     return TRUE;
 }
-\`\`\`
+\\\`\\\`\\\`
 
-EJEMPLOS DE RESPUESTA:
-- Explica brevemente qué vas a crear
-- Proporciona el código en bloques de \`\`\`
-- Menciona cómo compilar con CMake o Visual Studio
-- Ofrece ayuda adicional si necesita cambios
-
-Recuerda: Tu objetivo es crear herramientas funcionales que el usuario pueda usar inmediatamente.`;
+Genera código completo, funcional y bien documentado.`;
     }
     
-    // Resizable panes
+    // Resizers
     function setupResizers() {
-      const resizer1 = document.getElementById('resizer1');
-      const resizer2 = document.getElementById('resizer2');
-      const chatPane = document.querySelector('.chat-pane');
-      const editorPane = document.querySelector('.editor-pane');
-      const statusPane = document.querySelector('.status-pane');
-      
-      setupResizer(resizer1, chatPane, editorPane, 'width');
-      setupResizer(resizer2, editorPane, statusPane, 'width');
+      setupResizer('resizer1', '.chat-pane', '.editor-pane');
+      setupResizer('resizer2', '.editor-pane', '.status-pane');
     }
     
-    function setupResizer(resizer, left, right, dimension) {
+    function setupResizer(resizerId, leftSelector, rightSelector) {
+      const resizer = document.getElementById(resizerId);
+      const left = document.querySelector(leftSelector);
+      const right = document.querySelector(rightSelector);
       let isResizing = false;
       
-      resizer.addEventListener('mousedown', (e) => {
+      resizer.addEventListener('mousedown', () => {
         isResizing = true;
-        document.body.style.cursor = dimension === 'width' ? 'col-resize' : 'row-resize';
+        document.body.style.cursor = 'col-resize';
         document.body.style.overflow = 'hidden';
       });
       
       document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
-        
         const containerWidth = document.querySelector('.main-content').offsetWidth;
         const leftPercent = (e.clientX / containerWidth) * 100;
-        
         if (leftPercent > 15 && leftPercent < 50) {
           left.style.width = leftPercent + '%';
           right.style.width = (100 - leftPercent - 4) + '%';
@@ -1764,7 +2178,15 @@ Recuerda: Tu objetivo es crear herramientas funcionales que el usuario pueda usa
       });
     }
     
-    // Initialize app
+    // Chat input
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    
+    // Initialize
     init();
     setupResizers();
   </script>
