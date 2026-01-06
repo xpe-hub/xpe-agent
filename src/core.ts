@@ -1,22 +1,42 @@
 /**
  * XPE Agent Core
- * Motor principal del agente con integración Vercel AI SDK + Ollama
+ * Motor principal del agente con integración Vercel AI SDK + Ollama/Groq
  */
 
-import { streamText, generateText, tool } from 'ai';
-import { createOllama } from 'ollama-ai-provider';
+import { streamText, generateText, tool, createOllama, createGroq } from 'ai';
 import { getMemory, type MemoryEntry } from './memory';
 import { getPrompt, type PromptType } from './system';
 import * as tools from './tools';
 import { z } from 'zod';
 
+// Detectar proveedor de IA
+const AI_PROVIDER = process.env.AI_PROVIDER || 'ollama';
+
 // Configuración de Ollama
-const ollama = createOllama({
+const ollamaProvider = createOllama({
   baseURL: process.env.OLLAMA_URL || 'http://localhost:11434',
 });
 
-// Modelo por defecto (puede ser configurado)
-const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'llama3:latest';
+// Configuración de Groq
+const groqProvider = createGroq({
+  apiKey: process.env.GROQ_API_KEY || '',
+});
+
+// Seleccionar proveedor y modelo
+function getProviderAndModel() {
+  const modelName = process.env.OLLAMA_MODEL || 'llama3:latest';
+  const groqModel = process.env.GROQ_MODEL || 'llama-3.1-70b-versatile';
+  
+  if (AI_PROVIDER === 'groq') {
+    return { provider: groqProvider, model: groqModel };
+  }
+  return { provider: ollamaProvider, model: modelName };
+}
+
+const { provider: aiProvider, model: defaultModel } = getProviderAndModel();
+
+// Modelo por defecto
+const DEFAULT_MODEL = defaultModel;
 
 // Tipos de eventos del agente
 export type AgentEventType = 
@@ -139,7 +159,7 @@ class XPEAgentCore {
     try {
       // Usar Vercel AI SDK con Ollama
       const result = await streamText({
-        model: ollama(this.model),
+        model: aiProvider(this.model),
         system: systemPrompt,
         messages: [
           ...conversationHistory.map((entry: MemoryEntry) => ({
@@ -233,7 +253,7 @@ class XPEAgentCore {
 
     try {
       const result = await generateText({
-        model: ollama(this.model),
+        model: aiProvider(this.model),
         system: systemPrompt,
         messages: [
           ...conversationHistory.map((entry: MemoryEntry) => ({
